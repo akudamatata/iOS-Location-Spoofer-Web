@@ -258,8 +258,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
 
 #layer-menu{
   position:fixed;
-  top:calc(var(--safe-top) + 122px);
-  right:16px;
+  top:calc(var(--safe-top) + 72px);
+  right:68px;
   z-index:20;
   background:var(--glass-light);
   backdrop-filter:var(--blur-lg);
@@ -270,8 +270,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
   overflow:hidden;
   display:none;
   min-width:140px;
-  animation:slideDown .2s cubic-bezier(.34,1.2,.64,1);
+  animation:slideLeft .2s cubic-bezier(.34,1.2,.64,1);
 }
+@keyframes slideLeft{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}
 .layer-item{
   padding:12px 16px;font-size:14px;font-weight:500;
   color:var(--text);cursor:pointer;transition:background .1s;
