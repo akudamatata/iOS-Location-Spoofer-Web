@@ -46,6 +46,129 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
 }
 
 /* ═══════════════════════════════════════════════
+   LOGIN SCREEN (Liquid Glass)
+═══════════════════════════════════════════════ */
+#login-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,0.45);
+  backdrop-filter:blur(30px)saturate(160%);
+  -webkit-backdrop-filter:blur(30px)saturate(160%);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+#login-card{
+  width:100%;max-width:340px;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-lg);
+  -webkit-backdrop-filter:var(--blur-lg);
+  border:1px solid var(--glass-light-border);
+  box-shadow:0 24px 60px rgba(0,0,0,0.25);
+  border-radius:var(--r-lg);
+  padding:28px 24px;
+  text-align:center;
+}
+#login-card h2{font-size:21px;font-weight:700;color:var(--text);margin-bottom:8px;}
+#login-card p{font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:20px;}
+#login-input{
+  width:100%;height:46px;padding:0 14px;
+  font-size:16px;color:var(--text);
+  background:rgba(255,255,255,0.7);
+  border:1px solid rgba(60,60,67,0.2);
+  border-radius:12px;outline:none;
+  text-align:center;margin-bottom:16px;
+  transition:border-color .15s;
+}
+#login-input:focus{border-color:var(--accent);}
+#login-submit{
+  width:100%;height:46px;background:var(--accent);color:#fff;
+  border:none;border-radius:12px;font-size:15px;font-weight:600;
+  cursor:pointer;box-shadow:0 4px 16px rgba(0,122,255,0.3);
+  transition:background .15s,transform .15s;
+}
+#login-submit:active{transform:scale(.97);background:var(--accent-hover);}
+
+/* ═══════════════════════════════════════════════
+   CONFIG PANEL & BUTTON
+═══════════════════════════════════════════════ */
+#config-btn{
+  position:fixed;
+  top:calc(var(--safe-top) + 72px);
+  left:68px;
+  z-index:20;
+  width:44px;height:44px;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-md);
+  -webkit-backdrop-filter:var(--blur-md);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-sm);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s;
+  color:var(--text);
+}
+#config-btn:active{transform:scale(.92);}
+
+#config-panel{
+  position:fixed;
+  top:0;left:0;bottom:0;
+  width:min(350px,90vw);
+  z-index:40;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-lg);
+  -webkit-backdrop-filter:var(--blur-lg);
+  border-right:1px solid var(--glass-light-border);
+  box-shadow:4px 0 40px rgba(0,0,0,0.15);
+  transform:translateX(-110%);
+  transition:transform .35s cubic-bezier(.32,0,.67,0);
+  display:flex;flex-direction:column;
+}
+#config-panel.open{
+  transform:translateX(0);
+  transition-timing-function:cubic-bezier(.34,1.2,.64,1);
+}
+#config-panel-header{
+  padding:calc(var(--safe-top) + 16px) 16px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(60,60,67,.1);
+}
+#config-panel-header h2{font-size:20px;font-weight:700;color:var(--text);}
+#config-close{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(60,60,67,.1);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+#config-close:active{background:rgba(60,60,67,.2);}
+#config-content{flex:1;overflow-y:auto;padding:8px 0;}
+.config-section{
+  padding:16px 20px;
+  border-bottom:1px solid rgba(60,60,67,.08);
+}
+.config-section:last-child{border-bottom:none;}
+.config-title{
+  font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;
+}
+.config-desc{
+  font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;
+}
+.config-action-btn{
+  width:100%;height:40px;background:var(--accent);color:#fff;
+  border:none;border-radius:10px;font-size:13px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:background .15s,transform .15s;
+}
+.config-action-btn:active{transform:scale(.97);background:var(--accent-hover);}
+.config-code-box{
+  background:rgba(0,0,0,0.05);
+  border:1px solid rgba(60,60,67,0.12);
+  border-radius:8px;padding:10px;
+  font-family:monospace;font-size:11px;color:var(--text);
+  word-break:break-all;white-space:pre-wrap;
+  max-height:110px;overflow-y:auto;margin-bottom:10px;
+}
+
+
+/* ═══════════════════════════════════════════════
    MAP (full viewport)
 ═══════════════════════════════════════════════ */
 #map{
@@ -643,6 +766,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
   <span id="fav-badge">0</span>
 </button>
 
+<!-- Left: Config button -->
+<button id="config-btn" aria-label="小火箭配置">
+  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+</button>
+
 <!-- Right: Layer switcher -->
 <button id="layer-btn" aria-label="切换地图">
   <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
@@ -669,6 +797,45 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
   <button class="zoom-btn" id="btn-locate" aria-label="定位当前位置">
     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg>
   </button>
+</div>
+
+<!-- Login overlay -->
+<div id="login-overlay" style="display: none;">
+  <div id="login-card">
+    <h2>安全登录验证</h2>
+    <p>自建定位服务受密码保护，请输入您的访问密钥 (Token) 以解锁地图面板。</p>
+    <input id="login-input" type="password" placeholder="请输入密码 (Token)" autocomplete="off">
+    <button id="login-submit">进入系统</button>
+  </div>
+</div>
+
+<!-- Config panel -->
+<div id="config-panel">
+  <div id="config-panel-header">
+    <h2>Shadowrocket 配置</h2>
+    <button id="config-close">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+  <div id="config-content">
+    <div class="config-section">
+      <div class="config-title">方法 A：一键导入小火箭</div>
+      <div class="config-desc">最推荐的方式。点击下方按钮即可唤醒手机上的 Shadowrocket 自动拉取并安装该配置。</div>
+      <button class="config-action-btn" id="btn-config-import">一键导入模块</button>
+    </div>
+    <div class="config-section">
+      <div class="config-title">方法 B：手动复制配置链接</div>
+      <div class="config-desc">如果在微信或第三方浏览器无法唤醒，请复制下方完整的模块订阅链接，并粘贴导入到小火箭的“模块 -> 新增模块”中。</div>
+      <div class="config-code-box" id="config-url-text">...</div>
+      <button class="config-action-btn" id="btn-config-copy-url">复制配置链接</button>
+    </div>
+    <div class="config-section">
+      <div class="config-title">方法 C：一键复制 argument 参数</div>
+      <div class="config-desc">如果您已导入了模块，只需将下方为您拼装好的 argument 覆盖原模块参数即可。</div>
+      <div class="config-code-box" id="config-arg-text">...</div>
+      <button class="config-action-btn" id="btn-config-copy-arg">复制 argument 参数</button>
+    </div>
+  </div>
 </div>
 
 <!-- Favorites panel -->
@@ -1208,31 +1375,180 @@ document.addEventListener('click',function(e){
   }
 });
 
+/* ─── Config Panel logic ────────────────────────────────── */
+var configPanelOpen = false;
+function openConfigPanel() {
+  configPanelOpen = true;
+  $id('config-panel').classList.add('open');
+  elOverlay.classList.add('visible');
+  
+  // Dynamically build paths
+  var domain = window.location.origin;
+  var tokenVal = localStorage.getItem('gps_token') || TOKEN || '';
+  
+  // Format links
+  var moduleUrl = domain + '/ios-location-spoofer.sgmodule?token=' + encodeURIComponent(tokenVal);
+  var argText = 'configUrl=' + domain + '/loc.json?token=' + encodeURIComponent(tokenVal);
+  
+  $id('config-url-text').textContent = moduleUrl;
+  $id('config-arg-text').textContent = argText;
+}
+
+function closeConfigPanel() {
+  configPanelOpen = false;
+  $id('config-panel').classList.remove('open');
+  if (!favPanelOpen) elOverlay.classList.remove('visible');
+}
+
+$id('config-btn').addEventListener('click', function(e) {
+  e.stopPropagation();
+  configPanelOpen ? closeConfigPanel() : openConfigPanel();
+});
+$id('config-close').addEventListener('click', closeConfigPanel);
+
+$id('btn-config-import').addEventListener('click', function() {
+  var url = $id('config-url-text').textContent;
+  var importUrl = 'shadowrocket://install/module?url=' + encodeURIComponent(url);
+  window.location.href = importUrl;
+  toast('已唤起 Shadowrocket 导入模块');
+});
+
+$id('btn-config-copy-url').addEventListener('click', function() {
+  navigator.clipboard.writeText($id('config-url-text').textContent)
+    .then(function() { toast('配置链接已复制'); })
+    .catch(function() { toast('复制失败，请手动选择复制'); });
+});
+
+$id('btn-config-copy-arg').addEventListener('click', function() {
+  navigator.clipboard.writeText($id('config-arg-text').textContent)
+    .then(function() { toast('参数已复制'); })
+    .catch(function() { toast('复制失败，请手动选择复制'); });
+});
+
+// Click overlay closes everything
+elOverlay.addEventListener('click', function(){
+  closeFavPanel();
+  closeConfigPanel();
+  $id('layer-menu').style.display='none';
+});
+
+/* ─── Security login checks (30 days expiration) ─────────── */
+function verifyToken(token, callback) {
+  fetch(window.location.origin + '/verify?token=' + encodeURIComponent(token))
+    .then(function(r) {
+      if (r.status === 200) callback(true);
+      else callback(false);
+    })
+    .catch(function() { callback(false); });
+}
+
+function showLoginScreen(onSuccess) {
+  var overlay = $id('login-overlay');
+  var input = $id('login-input');
+  var submit = $id('login-submit');
+  
+  overlay.style.display = 'flex';
+  input.value = '';
+  
+  function attemptLogin() {
+    var val = input.value.trim();
+    if (!val) {
+      toast('请输入密码');
+      return;
+    }
+    submit.disabled = true;
+    submit.textContent = '验证中...';
+    verifyToken(val, function(ok) {
+      submit.disabled = false;
+      submit.textContent = '进入系统';
+      if (ok) {
+        // Cache token for 30 days
+        var session = {
+          token: val,
+          expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
+        };
+        localStorage.setItem('gps_token', val);
+        localStorage.setItem('gps_session', JSON.stringify(session));
+        
+        overlay.style.display = 'none';
+        onSuccess(val);
+        toast('登录成功，有效期30天');
+      } else {
+        toast('密码错误，请重新输入');
+        input.value = '';
+        input.focus();
+      }
+    });
+  }
+  
+  submit.onclick = attemptLogin;
+  input.onkeydown = function(e) {
+    if (e.key === 'Enter') attemptLogin();
+  };
+}
+
+function handleAuthentication(onAuthenticated) {
+  if (!TOKEN) {
+    // Open access, no token required
+    $id('login-overlay').style.display = 'none';
+    localStorage.removeItem('gps_token');
+    localStorage.removeItem('gps_session');
+    onAuthenticated('');
+    return;
+  }
+  
+  var session = {};
+  try {
+    session = JSON.parse(localStorage.getItem('gps_session') || '{}');
+  } catch(e) {}
+  
+  if (session.token && session.expiresAt && session.expiresAt > Date.now()) {
+    verifyToken(session.token, function(ok) {
+      if (ok) {
+        $id('login-overlay').style.display = 'none';
+        onAuthenticated(session.token);
+      } else {
+        showLoginScreen(onAuthenticated);
+      }
+    });
+  } else {
+    showLoginScreen(onAuthenticated);
+  }
+}
+
 /* ─── Init: load current coords from server ─────────────── */
-fetch(API('/loc.json'))
-  .then(function(r){return r.json();})
-  .then(function(d){
-    WGS={lat:d.latitude||39.90872,lng:d.longitude||116.39748};
-    lockedWGS={lat:WGS.lat,lng:WGS.lng};
-    altitude=d.altitude||null;
-    hacc=d.horizontalAccuracy||39;
-    vacc=d.verticalAccuracy||1000;
-    $id('inp-hacc').placeholder=hacc;
-    $id('inp-vacc').placeholder=vacc;
-    if(altitude!==null)$id('inp-alt').placeholder=Math.round(altitude);
-    initMap(WGS.lat,WGS.lng);
-    updateBubble();
-    updateStatus();
-    loadFavorites();
-  })
-  .catch(function(){
-    // fallback: Beijing
-    initMap(39.90872,116.39748);
-    updateBubble();
-    updateStatus();
-    loadFavorites();
-    toast('无法连接服务器，请检查 Token');
-  });
+handleAuthentication(function(activeToken) {
+  // Update API URL helper with cached token dynamically
+  API = function(p) {
+    var t = activeToken || localStorage.getItem('gps_token') || TOKEN || '';
+    return p + (t ? '?token=' + encodeURIComponent(t) : '');
+  };
+
+  fetch(API('/loc.json'))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      WGS={lat:d.latitude||39.90872,lng:d.longitude||116.39748};
+      lockedWGS={lat:WGS.lat,lng:WGS.lng};
+      altitude=d.altitude||null;
+      hacc=d.horizontalAccuracy||39;
+      vacc=d.verticalAccuracy||1000;
+      $id('inp-hacc').placeholder=hacc;
+      $id('inp-vacc').placeholder=vacc;
+      if(altitude!==null)$id('inp-alt').placeholder=Math.round(altitude);
+      initMap(WGS.lat,WGS.lng);
+      updateBubble();
+      updateStatus();
+      loadFavorites();
+    })
+    .catch(function(){
+      // fallback: Beijing
+      initMap(39.90872,116.39748);
+      updateBubble();
+      updateStatus();
+      loadFavorites();
+      toast('无法连接服务器，请检查 Token');
+    });
+});
 
 if (!AMAP_KEY) {
   $id('search-input').placeholder = '搜索地点 (国内搜索建议配置高德 Key)';

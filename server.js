@@ -180,6 +180,31 @@ async function handler(req, res) {
     return send(res, 200, 'application/json', '{"ok":true}');
   }
 
+  /* ─ GET /verify ─ */
+  if (pathname === '/verify' && method === 'GET') {
+    if (!authOk(query)) return send(res, 401, 'application/json', '{"error":"unauthorized"}');
+    return send(res, 200, 'application/json', '{"ok":true}');
+  }
+
+  /* ─ GET /ios-location-spoofer.sgmodule ─ */
+  if (pathname === '/ios-location-spoofer.sgmodule' && method === 'GET') {
+    try {
+      let content = fs.readFileSync(path.join(PUBLIC_DIR, 'ios-location-spoofer.sgmodule'), 'utf8');
+      const host = req.headers.host || 'localhost:8080';
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const tVal = query.token || '';
+      content = content.replace(/你的域名/g, host);
+      content = content.replace(/你的Token/g, tVal);
+      // Automatically upgrade script-path scheme to https if proxy says so
+      if (protocol === 'https') {
+        content = content.replace(/http:\/\/localhost:8080/g, 'https://' + host);
+      }
+      return send(res, 200, 'text/plain; charset=utf-8', content);
+    } catch (err) {
+      return send(res, 404, 'text/plain', 'Not found');
+    }
+  }
+
   /* ─ GET / → index.html with injected config ─ */
   if (method === 'GET' && (pathname === '/' || pathname === '')) {
     return serveFile(res, path.join(PUBLIC_DIR, 'index.html'), { token: TOKEN, amapKey: AMAP_KEY });
