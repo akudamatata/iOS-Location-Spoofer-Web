@@ -19,11 +19,12 @@
 
 ## 🛠 快速部署
 
-### 1. 快速启动（Docker Compose）
+在您的服务器上新建一个空目录，在该目录下只需创建一个 `docker-compose.yml` 文件即可启动运行（无需克隆整个代码仓库）。
 
-如果您不想克隆整个代码仓库，只需在服务器新建一个目录，并在其中创建以下两个文件即可直接启动：
+### 1. 创建 `docker-compose.yml` 并配置参数
 
-#### 文件一：`docker-compose.yml`
+在文件里直接填入您的自定义访问密码（Token）以及高德 Key（可选）：
+
 ```yaml
 services:
   gps-spoofer:
@@ -36,35 +37,25 @@ services:
       - ./data:/data
     environment:
       - PORT=8080
-      - TOKEN=${TOKEN}
-      - AMAP_KEY=${AMAP_KEY}
       - DATA_DIR=/data
+      
+      # 1. 网页访问与 Shadowrocket 提取坐标时所使用的安全密码（必填）
+      - TOKEN=您的安全密码_Token
+      
+      # 2. 高德地图 Web 服务 Key（用于高精度国内地名搜索，可选但强烈推荐）
+      # 实名认证后可免费申请，若不填国内搜索将回退至慢速的国际 OSM 节点
+      - AMAP_KEY=您的高德Web服务Key
 ```
 
-#### 文件二：`.env`
-```ini
-# 网页访问与 Shadowrocket 提取坐标时所使用的安全密码（必填）
-TOKEN=your_secret_token_here
+### 2. 启动容器
 
-# 高德地图 Web 服务 Key（用于高精度国内地点搜索，可选但强烈推荐）
-AMAP_KEY=your_amap_web_service_key_here
-```
+在同一目录下运行以下命令启动服务：
 
-配置好上述两个文件后，直接在当前目录执行以下命令启动：
 ```bash
 docker compose up -d
 ```
 
-编辑 `.env` 配置文件：
-- `TOKEN`: 设置您的访问秘钥（用于防止他人随意修改您的坐标）。
-- `AMAP_KEY`: 设置您的**高德地图 Web 服务 Key**。*(个人实名认证后免费申请，每日有几千次额度，国内高精度地点搜索必需。若不配置，国内搜索将退回慢速的 OSM 数据源)*。
-
-```bash
-# 启动容器
-docker compose up -d
-```
-
-启动后容器在端口 `8080` 监听。
+启动后，容器服务将自动拉取最新构建好的镜像并在 `8080` 端口监听。
 
 ### 2. Nginx 配置 HTTPS 反代
 因为 iOS 描述文件和代理连接的安全限制，Shadowrocket 要求域名必需启用 **HTTPS**。配置示例如下：
