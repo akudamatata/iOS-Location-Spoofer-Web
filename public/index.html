@@ -92,8 +92,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
 ═══════════════════════════════════════════════ */
 #config-btn{
   position:fixed;
-  top:calc(var(--safe-top) + 72px);
-  left:68px;
+  top:calc(var(--safe-top) + 126px);
+  left:16px;
   z-index:20;
   width:44px;height:44px;
   background:var(--glass-light);
@@ -820,12 +820,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
   <div id="config-content">
     <div class="config-section">
       <div class="config-title">方法 A：一键导入小火箭</div>
-      <div class="config-desc">最推荐的方式。点击下方按钮即可唤醒手机上的 Shadowrocket 自动拉取并安装该配置。</div>
-      <button class="config-action-btn" id="btn-config-import">一键导入模块</button>
+      <div class="config-desc">最推荐的方式。点击下方按钮即可唤醒手机上的 Shadowrocket 自动导入到【配置】或【模块】列表中。</div>
+      <button class="config-action-btn" id="btn-config-import">一键导入配置</button>
     </div>
     <div class="config-section">
       <div class="config-title">方法 B：手动复制配置链接</div>
-      <div class="config-desc">如果在微信或第三方浏览器无法唤醒，请复制下方完整的模块订阅链接，并粘贴导入到小火箭的“模块 -> 新增模块”中。</div>
+      <div class="config-desc">如果在微信或第三方浏览器无法唤醒，请复制下方完整的配置链接，前往 Shadowrocket 的【配置】页面 -> 点击右上角【+】号 -> 输入或粘贴此 URL 即可。</div>
       <div class="config-code-box" id="config-url-text">...</div>
       <button class="config-action-btn" id="btn-config-copy-url">复制配置链接</button>
     </div>
