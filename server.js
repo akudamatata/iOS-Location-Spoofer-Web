@@ -14,9 +14,9 @@ const FAV_FILE   = path.join(DATA_DIR, 'favorites.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 const DEFAULT_LOC = {
-  latitude:           37.3349,
-  longitude:          -122.00902,
-  altitude:           530,
+  latitude:           39.90872,
+  longitude:          116.39748,
+  altitude:           44,
   horizontalAccuracy: 39,
   verticalAccuracy:   1000
 };
