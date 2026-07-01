@@ -375,7 +375,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
   text-align:center;padding:48px 24px;
   color:var(--text-secondary);font-size:14px;line-height:1.6;
 }
-#fav-empty .emoji{font-size:40px;display:block;margin-bottom:12px;}
+#fav-empty svg{
+  display:block;
+  margin:0 auto 12px;
+}
 
 /* Overlay */
 #overlay{
@@ -877,8 +880,8 @@ function buildLayers(){
     L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=8',{subdomains:'1234',maxZoom:19,attribution:'© 高德地图'})
   ]);
   layers.osm=L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19,attribution:'© OpenStreetMap contributors'});
+    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    {maxZoom:20,attribution:'© OpenStreetMap contributors, © CartoDB'});
 }
 
 function initMap(lat,lng){
