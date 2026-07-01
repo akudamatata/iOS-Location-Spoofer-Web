@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="transparent">
+<title>GPS Spoofer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;background:#000}
+
+/* ═══════════════════════════════════════════════
+   LIQUID GLASS TOKENS  (iOS 26 / Apple 2026)
+═══════════════════════════════════════════════ */
+:root{
+  --glass-light:rgba(255,255,255,0.72);
+  --glass-light-border:rgba(255,255,255,0.90);
+  --glass-mid:rgba(255,255,255,0.55);
+  --glass-dark:rgba(0,0,0,0.18);
+  --blur-sm:blur(12px)saturate(160%);
+  --blur-md:blur(20px)saturate(180%);
+  --blur-lg:blur(32px)saturate(200%);
+  --shadow-float:0 8px 32px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.10),inset 0 1px 0 rgba(255,255,255,0.95);
+  --shadow-press:0 2px 8px rgba(0,0,0,0.10),inset 0 1px 0 rgba(255,255,255,0.8);
+  --accent:#007AFF;
+  --accent-hover:#0071E3;
+  --green:#30D158;
+  --green-hover:#28B14D;
+  --red:#FF453A;
+  --text:#1C1C1E;
+  --text-secondary:rgba(60,60,67,0.6);
+  --r-sm:14px;
+  --r-md:20px;
+  --r-lg:26px;
+  --r-xl:32px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+/* ═══════════════════════════════════════════════
+   MAP (full viewport)
+═══════════════════════════════════════════════ */
+#map{
+  position:fixed;inset:0;width:100%;height:100%;z-index:0;
+}
+.leaflet-control-zoom{display:none}
+.leaflet-control-attribution{
+  background:rgba(255,255,255,0.55)!important;
+  backdrop-filter:var(--blur-sm)!important;
+  -webkit-backdrop-filter:var(--blur-sm)!important;
+  border-radius:8px!important;
+  font-size:10px!important;
+  color:var(--text-secondary)!important;
+  border:1px solid var(--glass-light-border)!important;
+}
+
+/* ═══════════════════════════════════════════════
+   CROSSHAIR (fixed viewport center)
+═══════════════════════════════════════════════ */
+#crosshair{
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  z-index:10;
+  pointer-events:none;
+  width:60px;height:60px;
+}
+#crosshair svg{
+  width:100%;height:100%;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+#crosshair.locked svg{transform:scale(0.8);}
+
+/* Pulse ring */
+#ch-ring{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:60px;height:60px;
+  border:2px solid rgba(0,122,255,0.5);
+  border-radius:50%;
+  opacity:0;
+  animation:pulse 2.5s ease-out infinite;
+}
+@keyframes pulse{
+  0%{opacity:.7;transform:translate(-50%,-50%)scale(0.6);}
+  70%{opacity:0;transform:translate(-50%,-50%)scale(1.6);}
+  100%{opacity:0;}
+}
+
+/* ═══════════════════════════════════════════════
+   COORDINATE BUBBLE
+═══════════════════════════════════════════════ */
+#coord-bubble{
+  position:fixed;
+  left:50%;
+  bottom:calc(50% + 46px);
+  transform:translateX(-50%);
+  z-index:11;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-md);
+  -webkit-backdrop-filter:var(--blur-md);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-sm);
+  padding:7px 14px;
+  white-space:nowrap;
+  pointer-events:none;
+  transition:opacity .25s,transform .25s;
+}
+#coord-bubble .coords{
+  font-size:13px;font-weight:600;
+  color:var(--text);letter-spacing:-.3px;
+}
+#coord-bubble .alt{
+  font-size:11px;font-weight:500;
+  color:var(--text-secondary);
+  margin-top:1px;
+  text-align:center;
+}
+/* Arrow pointing down */
+#coord-bubble::after{
+  content:'';position:absolute;
+  bottom:-6px;left:50%;
+  transform:translateX(-50%) rotate(45deg);
+  width:10px;height:10px;
+  background:inherit;
+  border-right:1px solid var(--glass-light-border);
+  border-bottom:1px solid var(--glass-light-border);
+}
+
+/* ═══════════════════════════════════════════════
+   TOP SEARCH BAR
+═══════════════════════════════════════════════ */
+#search-bar{
+  position:fixed;
+  top:calc(var(--safe-top) + 12px);
+  left:16px;right:16px;
+  z-index:20;
+  display:flex;gap:8px;align-items:center;
+}
+#search-input{
+  flex:1;
+  height:48px;
+  padding:0 16px;
+  font-size:16px;font-weight:400;
+  color:var(--text);
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-md);
+  -webkit-backdrop-filter:var(--blur-md);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-md);
+  outline:none;
+  transition:box-shadow .2s,border-color .2s;
+}
+#search-input::placeholder{color:var(--text-secondary);}
+#search-input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,122,255,.15),var(--shadow-float);
+}
+#search-btn{
+  width:48px;height:48px;flex-shrink:0;
+  background:var(--accent);
+  border:none;border-radius:var(--r-md);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,122,255,.35),var(--shadow-float);
+  transition:transform .15s,background .15s;
+}
+#search-btn:active{transform:scale(.93);background:var(--accent-hover);}
+#search-btn svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* Search results dropdown */
+#search-results{
+  position:fixed;
+  top:calc(var(--safe-top) + 68px);
+  left:16px;right:16px;
+  z-index:21;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-lg);
+  -webkit-backdrop-filter:var(--blur-lg);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-md);
+  overflow:hidden;
+  max-height:260px;overflow-y:auto;
+  display:none;
+  animation:slideDown .2s cubic-bezier(.34,1.2,.64,1);
+}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.result-row{
+  padding:13px 16px;
+  font-size:14px;font-weight:400;
+  color:var(--text);
+  border-bottom:1px solid rgba(60,60,67,.1);
+  cursor:pointer;transition:background .12s;
+}
+.result-row:last-child{border-bottom:none;}
+.result-row:active{background:rgba(0,122,255,.08);}
+.result-row .name{font-weight:500;}
+.result-row .sub{font-size:12px;color:var(--text-secondary);margin-top:2px;}
+
+/* ═══════════════════════════════════════════════
+   LAYER SWITCHER  (top right)
+═══════════════════════════════════════════════ */
+#layer-btn{
+  position:fixed;
+  top:calc(var(--safe-top) + 72px);
+  right:16px;
+  z-index:20;
+  width:44px;height:44px;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-md);
+  -webkit-backdrop-filter:var(--blur-md);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-sm);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s;font-size:20px;
+}
+#layer-btn:active{transform:scale(.92);}
+
+#layer-menu{
+  position:fixed;
+  top:calc(var(--safe-top) + 122px);
+  right:16px;
+  z-index:20;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-lg);
+  -webkit-backdrop-filter:var(--blur-lg);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-md);
+  overflow:hidden;
+  display:none;
+  min-width:140px;
+  animation:slideDown .2s cubic-bezier(.34,1.2,.64,1);
+}
+.layer-item{
+  padding:12px 16px;font-size:14px;font-weight:500;
+  color:var(--text);cursor:pointer;transition:background .1s;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid rgba(60,60,67,.08);
+}
+.layer-item:last-child{border-bottom:none;}
+.layer-item:active{background:rgba(0,122,255,.08);}
+.layer-item.active{color:var(--accent);}
+.layer-item .check{margin-left:auto;color:var(--accent);font-size:16px;opacity:0;}
+.layer-item.active .check{opacity:1;}
+
+/* ═══════════════════════════════════════════════
+   FAVORITES BUTTON (left side, floating)
+═══════════════════════════════════════════════ */
+#fav-btn{
+  position:fixed;
+  top:calc(var(--safe-top) + 72px);
+  left:16px;
+  z-index:20;
+  width:44px;height:44px;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-md);
+  -webkit-backdrop-filter:var(--blur-md);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-sm);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:20px;transition:transform .15s;
+}
+#fav-btn:active{transform:scale(.92);}
+#fav-badge{
+  position:absolute;top:-4px;right:-4px;
+  background:var(--accent);color:#fff;
+  font-size:9px;font-weight:700;
+  min-width:16px;height:16px;
+  border-radius:8px;padding:0 3px;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #fff;
+  opacity:0;transition:opacity .2s;
+}
+
+/* ═══════════════════════════════════════════════
+   FAVORITES PANEL (slide from left)
+═══════════════════════════════════════════════ */
+#fav-panel{
+  position:fixed;
+  top:0;left:0;bottom:0;
+  width:min(320px,90vw);
+  z-index:40;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-lg);
+  -webkit-backdrop-filter:var(--blur-lg);
+  border-right:1px solid var(--glass-light-border);
+  box-shadow:4px 0 40px rgba(0,0,0,0.15);
+  transform:translateX(-110%);
+  transition:transform .35s cubic-bezier(.32,0,.67,0);
+  display:flex;flex-direction:column;
+}
+#fav-panel.open{
+  transform:translateX(0);
+  transition-timing-function:cubic-bezier(.34,1.2,.64,1);
+}
+#fav-panel-header{
+  padding:calc(var(--safe-top) + 16px) 16px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(60,60,67,.1);
+}
+#fav-panel-header h2{font-size:20px;font-weight:700;color:var(--text);}
+#fav-close{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(60,60,67,.1);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:background .15s;
+}
+#fav-close:active{background:rgba(60,60,67,.2);}
+#fav-list{flex:1;overflow-y:auto;padding:8px 0;}
+.fav-item{
+  padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;transition:background .1s;
+}
+.fav-item:active{background:rgba(0,122,255,.06);}
+.fav-icon{
+  width:40px;height:40px;flex-shrink:0;
+  background:rgba(0,122,255,.1);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.fav-info{flex:1;min-width:0;}
+.fav-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fav-coords{font-size:12px;color:var(--text-secondary);margin-top:2px;}
+.fav-del{
+  width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  background:rgba(255,69,58,.1);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:background .15s;
+}
+.fav-del:active{background:rgba(255,69,58,.25);}
+#fav-empty{
+  text-align:center;padding:48px 24px;
+  color:var(--text-secondary);font-size:14px;line-height:1.6;
+}
+#fav-empty .emoji{font-size:40px;display:block;margin-bottom:12px;}
+
+/* Overlay */
+#overlay{
+  position:fixed;inset:0;z-index:39;
+  background:rgba(0,0,0,0);
+  pointer-events:none;
+  transition:background .35s;
+}
+#overlay.visible{
+  background:rgba(0,0,0,0.3);
+  pointer-events:all;
+}
+
+/* ═══════════════════════════════════════════════
+   BOTTOM DRAWER
+═══════════════════════════════════════════════ */
+#drawer{
+  position:fixed;
+  left:0;right:0;
+  bottom:0;
+  z-index:30;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-lg);
+  -webkit-backdrop-filter:var(--blur-lg);
+  border-top:1px solid var(--glass-light-border);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:0 -8px 40px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.9);
+  transition:transform .35s cubic-bezier(.34,1.15,.64,1);
+  padding-bottom:var(--safe-bottom);
+  /* Default: show just the handle + buttons */
+  transform:translateY(0);
+}
+
+/* Drag handle */
+#drawer-handle{
+  display:flex;justify-content:center;padding:10px 0 4px;
+  cursor:pointer;
+}
+#drawer-handle::after{
+  content:'';
+  width:36px;height:4px;
+  background:rgba(60,60,67,.25);
+  border-radius:2px;
+}
+
+/* Collapsed section (always visible) */
+#drawer-collapsed{
+  padding:4px 16px 16px;
+  display:flex;gap:10px;align-items:center;
+}
+
+/* Saved status pill */
+#status-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;
+  background:rgba(60,60,67,.08);
+  border-radius:20px;flex:1;min-width:0;
+  transition:background .2s;
+}
+#status-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--text-secondary);
+  transition:background .3s;
+}
+#status-dot.saved{background:var(--green);}
+#status-dot.unsaved{background:#FF9F0A;animation:blink 1.5s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
+#status-text{font-size:12px;font-weight:500;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+#btn-lock{
+  height:48px;padding:0 22px;
+  background:var(--green);
+  color:#fff;font-size:15px;font-weight:600;
+  border:none;border-radius:var(--r-md);cursor:pointer;
+  box-shadow:0 4px 16px rgba(48,209,88,.35);
+  display:flex;align-items:center;gap:7px;flex-shrink:0;
+  transition:transform .15s,background .15s,box-shadow .15s;
+}
+#btn-lock:active{transform:scale(.95);background:var(--green-hover);box-shadow:none;}
+#btn-lock.locking{background:#aaa;pointer-events:none;}
+
+#btn-fav-add{
+  width:48px;height:48px;flex-shrink:0;
+  background:var(--glass-mid);
+  backdrop-filter:var(--blur-sm);
+  -webkit-backdrop-filter:var(--blur-sm);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-press);
+  border-radius:var(--r-md);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  transition:transform .15s,background .15s;
+}
+#btn-fav-add:active{transform:scale(.93);}
+
+/* Expanded section (hidden by default) */
+#drawer-expanded{
+  padding:0 16px 8px;
+  max-height:0;overflow:hidden;
+  transition:max-height .35s cubic-bezier(.34,1.1,.64,1),
+             padding .35s cubic-bezier(.34,1.1,.64,1);
+}
+#drawer-expanded.open{
+  max-height:220px;
+  padding:0 16px 16px;
+}
+
+.param-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;
+  border-bottom:1px solid rgba(60,60,67,.08);
+}
+.param-row:last-child{border-bottom:none;}
+.param-label{
+  font-size:13px;font-weight:500;color:var(--text-secondary);
+  min-width:68px;
+}
+.param-input{
+  flex:1;height:36px;padding:0 12px;
+  font-size:14px;font-weight:500;color:var(--text);
+  background:rgba(255,255,255,.6);
+  border:1px solid rgba(60,60,67,.15);
+  border-radius:10px;outline:none;
+  transition:border-color .15s;
+}
+.param-input:focus{border-color:var(--accent);}
+.param-unit{font-size:13px;color:var(--text-secondary);min-width:18px;}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+#toast{
+  position:fixed;
+  bottom:calc(var(--safe-bottom) + 120px);
+  left:50%;transform:translateX(-50%) translateY(12px);
+  z-index:99;
+  background:rgba(30,30,32,.88);
+  backdrop-filter:var(--blur-sm);
+  -webkit-backdrop-filter:var(--blur-sm);
+  color:#fff;font-size:14px;font-weight:500;
+  padding:11px 20px;border-radius:var(--r-md);
+  white-space:nowrap;
+  opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ═══════════════════════════════════════════════
+   SAVE NAME MODAL
+═══════════════════════════════════════════════ */
+#modal-backdrop{
+  position:fixed;inset:0;z-index:50;
+  background:rgba(0,0,0,.4);
+  backdrop-filter:var(--blur-sm);
+  -webkit-backdrop-filter:var(--blur-sm);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+#modal-backdrop.open{display:flex;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+#modal{
+  width:100%;max-width:320px;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-lg);
+  -webkit-backdrop-filter:var(--blur-lg);
+  border:1px solid var(--glass-light-border);
+  box-shadow:0 24px 60px rgba(0,0,0,.2);
+  border-radius:var(--r-lg);
+  overflow:hidden;
+  animation:modalIn .3s cubic-bezier(.34,1.3,.64,1);
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.88)translateY(20px);}to{opacity:1;transform:none;}}
+#modal-header{padding:22px 20px 12px;border-bottom:1px solid rgba(60,60,67,.1);}
+#modal-header h3{font-size:17px;font-weight:700;color:var(--text);}
+#modal-header p{font-size:13px;color:var(--text-secondary);margin-top:4px;}
+#modal-body{padding:16px 20px;}
+#modal-name{
+  width:100%;height:44px;padding:0 14px;
+  font-size:16px;font-weight:400;color:var(--text);
+  background:rgba(255,255,255,.7);
+  border:1px solid rgba(60,60,67,.2);
+  border-radius:12px;outline:none;
+  transition:border-color .15s;
+}
+#modal-name:focus{border-color:var(--accent);}
+#modal-footer{
+  display:flex;border-top:1px solid rgba(60,60,67,.1);
+}
+.modal-btn{
+  flex:1;height:52px;border:none;cursor:pointer;
+  font-size:16px;font-weight:500;transition:background .1s;
+}
+.modal-btn.cancel{
+  background:transparent;color:var(--text-secondary);
+  border-right:1px solid rgba(60,60,67,.1);
+}
+.modal-btn.cancel:active{background:rgba(60,60,67,.06);}
+.modal-btn.confirm{background:transparent;color:var(--accent);font-weight:600;}
+.modal-btn.confirm:active{background:rgba(0,122,255,.06);}
+
+/* ═══════════════════════════════════════════════
+   ZOOM CONTROLS (custom, top right below layer)
+═══════════════════════════════════════════════ */
+#zoom-controls{
+  position:fixed;
+  right:16px;
+  top:calc(var(--safe-top) + 126px);
+  z-index:20;
+  display:flex;flex-direction:column;gap:6px;
+}
+.zoom-btn{
+  width:44px;height:44px;
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-md);
+  -webkit-backdrop-filter:var(--blur-md);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-sm);cursor:pointer;
+  font-size:22px;font-weight:300;color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .12s,background .12s;user-select:none;
+}
+.zoom-btn:active{transform:scale(.92);background:rgba(255,255,255,.9);}
+
+</style>
+</head>
+<body>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Crosshair -->
+<div id="crosshair">
+  <div id="ch-ring"></div>
+  <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    <!-- Horizontal line -->
+    <line x1="2" y1="30" x2="22" y2="30" stroke="#007AFF" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="38" y1="30" x2="58" y2="30" stroke="#007AFF" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Vertical line -->
+    <line x1="30" y1="2"  x2="30" y2="22" stroke="#007AFF" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="30" y1="38" x2="30" y2="58" stroke="#007AFF" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Center ring -->
+    <circle cx="30" cy="30" r="5.5" fill="none" stroke="#007AFF" stroke-width="2.2"/>
+    <!-- Center dot -->
+    <circle cx="30" cy="30" r="2" fill="#007AFF"/>
+  </svg>
+</div>
+
+<!-- Coordinate bubble -->
+<div id="coord-bubble">
+  <div class="coords" id="bubble-coords">---, ---</div>
+  <div class="alt" id="bubble-alt">海拔 — m</div>
+</div>
+
+<!-- Top search bar -->
+<div id="search-bar">
+  <input id="search-input" type="text" placeholder="搜索地点…" autocomplete="off" spellcheck="false">
+  <button id="search-btn" aria-label="搜索">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+  </button>
+</div>
+<div id="search-results"></div>
+
+<!-- Overlay (for panels) -->
+<div id="overlay"></div>
+
+<!-- Left: Favorites button -->
+<button id="fav-btn" aria-label="收藏夹">
+  ⭐
+  <span id="fav-badge">0</span>
+</button>
+
+<!-- Right: Layer switcher -->
+<button id="layer-btn" aria-label="切换地图">🗺</button>
+<div id="layer-menu">
+  <div class="layer-item active" data-layer="amap" id="layer-amap">
+    <span>🏙</span>高德地图<span class="check">✓</span>
+  </div>
+  <div class="layer-item" data-layer="sat" id="layer-sat">
+    <span>🛰</span>高德卫星<span class="check">✓</span>
+  </div>
+  <div class="layer-item" data-layer="osm" id="layer-osm">
+    <span>🌍</span>国际地图<span class="check">✓</span>
+  </div>
+</div>
+
+<!-- Right: Zoom controls -->
+<div id="zoom-controls">
+  <button class="zoom-btn" id="btn-zoom-in">+</button>
+  <button class="zoom-btn" id="btn-zoom-out">−</button>
+</div>
+
+<!-- Favorites panel -->
+<div id="fav-panel">
+  <div id="fav-panel-header">
+    <h2>收藏夹</h2>
+    <button id="fav-close">✕</button>
+  </div>
+  <div id="fav-list">
+    <div id="fav-empty">
+      <span class="emoji">⭐</span>
+      暂无收藏<br>锁定位置后点「收藏」即可保存
+    </div>
+  </div>
+</div>
+
+<!-- Bottom drawer -->
+<div id="drawer">
+  <div id="drawer-handle"></div>
+
+  <!-- Expanded params (shown when drawer is dragged up) -->
+  <div id="drawer-expanded">
+    <div class="param-row">
+      <span class="param-label">海拔</span>
+      <input class="param-input" id="inp-alt" type="number" inputmode="decimal" placeholder="自动">
+      <span class="param-unit">m</span>
+    </div>
+    <div class="param-row">
+      <span class="param-label">水平精度</span>
+      <input class="param-input" id="inp-hacc" type="number" inputmode="decimal" placeholder="39">
+      <span class="param-unit">m</span>
+    </div>
+    <div class="param-row">
+      <span class="param-label">垂直精度</span>
+      <input class="param-input" id="inp-vacc" type="number" inputmode="decimal" placeholder="1000">
+      <span class="param-unit">m</span>
+    </div>
+  </div>
+
+  <!-- Collapsed actions (always visible) -->
+  <div id="drawer-collapsed">
+    <div id="status-pill">
+      <span id="status-dot"></span>
+      <span id="status-text">点击地图选择位置</span>
+    </div>
+    <button id="btn-lock">
+      <span id="btn-lock-icon">📍</span>
+      <span id="btn-lock-label">锁定</span>
+    </button>
+    <button id="btn-fav-add" aria-label="收藏当前位置">⭐</button>
+  </div>
+</div>
+
+<!-- Save-name modal -->
+<div id="modal-backdrop">
+  <div id="modal">
+    <div id="modal-header">
+      <h3>命名收藏</h3>
+      <p id="modal-coords-hint">--</p>
+    </div>
+    <div id="modal-body">
+      <input id="modal-name" type="text" maxlength="30" placeholder="输入名称（如：家、公司、咖啡厅）">
+    </div>
+    <div id="modal-footer">
+      <button class="modal-btn cancel" id="modal-cancel">取消</button>
+      <button class="modal-btn confirm" id="modal-confirm">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ─── Runtime config injected by server ─────────────────── */
+var CFG = window.__CFG__ || {};
+var TOKEN = CFG.token || '';
+var API = function(p){ return p + (TOKEN ? '?token=' + encodeURIComponent(TOKEN) : ''); };
+
+/* ─── GCJ-02 ↔ WGS-84 (China map offset correction) ─────── */
+var GCJ = (function(){
+  var PI=Math.PI, a=6378245.0, ee=0.00669342162296594323;
+  function out(lat,lng){return(lng<72.004||lng>137.8347)||(lat<0.8293||lat>55.8271);}
+  function tLat(x,y){
+    var r=-100+2*x+3*y+.2*y*y+.1*x*y+.2*Math.sqrt(Math.abs(x));
+    r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;
+    r+=(20*Math.sin(y*PI)+40*Math.sin(y/3*PI))*2/3;
+    r+=(160*Math.sin(y/12*PI)+320*Math.sin(y*PI/30))*2/3;return r;
+  }
+  function tLng(x,y){
+    var r=300+x+2*y+.1*x*x+.1*x*y+.1*Math.sqrt(Math.abs(x));
+    r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;
+    r+=(20*Math.sin(x*PI)+40*Math.sin(x/3*PI))*2/3;
+    r+=(150*Math.sin(x/12*PI)+300*Math.sin(x/30*PI))*2/3;return r;
+  }
+  function w2g(lat,lng){
+    if(out(lat,lng))return[lat,lng];
+    var dLat=tLat(lng-105,lat-35),dLng=tLng(lng-105,lat-35);
+    var rLat=lat/180*PI,m=Math.sin(rLat);m=1-ee*m*m;var sm=Math.sqrt(m);
+    dLat=dLat*180/((a*(1-ee))/(m*sm)*PI);
+    dLng=dLng*180/(a/sm*Math.cos(rLat)*PI);
+    return[lat+dLat,lng+dLng];
+  }
+  function g2w(lat,lng){
+    if(out(lat,lng))return[lat,lng];
+    var g=w2g(lat,lng);return[lat*2-g[0],lng*2-g[1]];
+  }
+  return{w2g:w2g,g2w:g2w};
+})();
+
+/* ─── State ──────────────────────────────────────────────── */
+var map, currentLayer='amap';
+var WGS={lat:37.3349,lng:-122.00902}; // current center in WGS-84
+var lockedWGS=null;                   // last saved to server
+var altitude=null,hacc=39,vacc=1000;
+var altFetchTimer=null;
+var drawerExpanded=false;
+var drawerDragStartY=0,drawerDragStartExpanded=false;
+var favorites=[];
+var favPanelOpen=false;
+
+/* ─── DOM refs ───────────────────────────────────────────── */
+function $id(id){return document.getElementById(id);}
+var elBubbleCoords=$id('bubble-coords'),
+    elBubbleAlt=$id('bubble-alt'),
+    elStatusDot=$id('status-dot'),
+    elStatusText=$id('status-text'),
+    elBtnLock=$id('btn-lock'),
+    elBtnLockLabel=$id('btn-lock-label'),
+    elDrawerExpanded=$id('drawer-expanded'),
+    elFavList=$id('fav-list'),
+    elFavBadge=$id('fav-badge'),
+    elFavEmpty=$id('fav-empty'),
+    elOverlay=$id('overlay');
+
+/* ─── Toast ──────────────────────────────────────────────── */
+var toastTimer=null;
+function toast(msg){
+  var el=$id('toast');
+  el.textContent=msg;el.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.classList.remove('show');},2200);
+}
+
+/* ─── Coordinate display ─────────────────────────────────── */
+function fmtCoord(v,pos,neg){
+  var dir=v>=0?pos:neg;
+  return Math.abs(v).toFixed(5)+'° '+dir;
+}
+function updateBubble(){
+  elBubbleCoords.textContent=fmtCoord(WGS.lat,'N','S')+'  '+fmtCoord(WGS.lng,'E','W');
+  elBubbleAlt.textContent=altitude!==null?('海拔 '+Math.round(altitude)+' m'):'海拔 — m';
+}
+function updateStatus(){
+  if(!lockedWGS){
+    elStatusDot.className='status-dot';
+    elStatusText.textContent='拖动地图，然后点「锁定」';
+    return;
+  }
+  var same=Math.abs(WGS.lat-lockedWGS.lat)<0.00001&&Math.abs(WGS.lng-lockedWGS.lng)<0.00001;
+  if(same){
+    elStatusDot.className='status-dot saved';
+    elStatusText.textContent='已锁定 · '+WGS.lat.toFixed(4)+', '+WGS.lng.toFixed(4);
+  }else{
+    elStatusDot.className='status-dot unsaved';
+    elStatusText.textContent='位置已移动，点「锁定」生效';
+  }
+}
+
+/* ─── Elevation fetch ────────────────────────────────────── */
+function fetchElevation(lat,lng){
+  fetch('https://api.open-meteo.com/v1/elevation?latitude='+lat+'&longitude='+lng)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.elevation&&d.elevation.length){
+        altitude=d.elevation[0];
+        $id('inp-alt').placeholder=Math.round(altitude);
+        updateBubble();
+      }
+    }).catch(function(){});
+}
+function scheduleElevation(){
+  if(altFetchTimer)clearTimeout(altFetchTimer);
+  altFetchTimer=setTimeout(function(){fetchElevation(WGS.lat,WGS.lng);},800);
+}
+
+/* ─── Map center → WGS-84 ────────────────────────────────── */
+function onMapMove(){
+  var c=map.getCenter();
+  var w=currentLayer==='osm'?[c.lat,c.lng]:GCJ.g2w(c.lat,c.lng);
+  WGS={lat:w[0],lng:w[1]};
+  updateBubble();
+  updateStatus();
+  scheduleElevation();
+}
+
+/* ─── Map setup ──────────────────────────────────────────── */
+var layers={};
+function buildLayers(){
+  layers.amap=L.tileLayer(
+    'https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7',
+    {subdomains:'1234',maxZoom:19,attribution:'© 高德地图'});
+  layers.sat=L.layerGroup([
+    L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:19}),
+    L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=8',{subdomains:'1234',maxZoom:19,attribution:'© 高德地图'})
+  ]);
+  layers.osm=L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19,attribution:'© OpenStreetMap contributors'});
+}
+
+function initMap(lat,lng){
+  var dispLat,dispLng;
+  if(currentLayer==='osm'){dispLat=lat;dispLng=lng;}
+  else{var g=GCJ.w2g(lat,lng);dispLat=g[0];dispLng=g[1];}
+
+  map=L.map('map',{zoomControl:false,attributionControl:true});
+  buildLayers();
+  layers.amap.addTo(map);
+  map.setView([dispLat,dispLng],13);
+  map.on('move',onMapMove);
+  map.on('moveend',onMapMove);
+
+  // Zoom buttons
+  $id('btn-zoom-in').addEventListener('click',function(){map.zoomIn();});
+  $id('btn-zoom-out').addEventListener('click',function(){map.zoomOut();});
+}
+
+/* ─── Layer switching ────────────────────────────────────── */
+function switchLayer(name){
+  if(name===currentLayer)return;
+  var c=map.getCenter();
+  // Convert current display coords → WGS-84 → new display coords
+  var wgs=currentLayer==='osm'?[c.lat,c.lng]:GCJ.g2w(c.lat,c.lng);
+  var newDisp=name==='osm'?wgs:GCJ.w2g(wgs[0],wgs[1]);
+
+  map.removeLayer(layers[currentLayer]);
+  currentLayer=name;
+  layers[name].addTo(map);
+  map.setView([newDisp[0],newDisp[1]],map.getZoom(),{animate:false});
+
+  // Update UI
+  document.querySelectorAll('.layer-item').forEach(function(el){
+    el.classList.toggle('active',el.dataset.layer===name);
+  });
+  $id('layer-menu').style.display='none';
+}
+
+/* ─── Search ─────────────────────────────────────────────── */
+var searchDebounce=null;
+function doSearch(){
+  var q=$id('search-input').value.trim();
+  if(!q)return;
+  var box=$id('search-results');
+  box.innerHTML='<div class="result-row"><span class="name">搜索中…</span></div>';
+  box.style.display='block';
+
+  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q='+encodeURIComponent(q))
+    .then(function(r){return r.json();})
+    .then(function(a){
+      box.innerHTML='';
+      if(!a||!a.length){
+        box.innerHTML='<div class="result-row"><span class="name">没找到结果</span></div>';
+        return;
+      }
+      a.forEach(function(it){
+        var row=document.createElement('div');row.className='result-row';
+        var parts=it.display_name.split(',');
+        row.innerHTML='<div class="name">'+parts[0]+'</div>'
+                     +'<div class="sub">'+parts.slice(1,3).join(',')+'</div>';
+        row.addEventListener('click',function(){
+          var wLat=+it.lat,wLng=+it.lon;
+          var disp=currentLayer==='osm'?[wLat,wLng]:GCJ.w2g(wLat,wLng);
+          map.setView([disp[0],disp[1]],16,{animate:true});
+          box.style.display='none';
+          $id('search-input').value='';
+        });
+        box.appendChild(row);
+      });
+    }).catch(function(){
+      box.innerHTML='<div class="result-row"><span class="name">搜索失败，请重试</span></div>';
+    });
+}
+$id('search-btn').addEventListener('click',doSearch);
+$id('search-input').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch();});
+document.addEventListener('click',function(e){
+  if(!$id('search-bar').contains(e.target)&&!$id('search-results').contains(e.target)){
+    $id('search-results').style.display='none';
+  }
+});
+
+/* ─── Lock location ──────────────────────────────────────── */
+function lockLocation(){
+  elBtnLock.classList.add('locking');
+  elBtnLockLabel.textContent='保存中…';
+
+  var altVal=$id('inp-alt').value?parseFloat($id('inp-alt').value):altitude;
+  var haccVal=$id('inp-hacc').value?parseFloat($id('inp-hacc').value):hacc;
+  var vaccVal=$id('inp-vacc').value?parseFloat($id('inp-vacc').value):vacc;
+
+  var payload={
+    latitude:WGS.lat,longitude:WGS.lng,
+    altitude:altVal||0,
+    horizontalAccuracy:haccVal||39,
+    verticalAccuracy:vaccVal||1000
+  };
+  fetch(API('/set'),{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(function(r){
+    if(!r.ok)throw new Error(r.status);
+    lockedWGS={lat:WGS.lat,lng:WGS.lng};
+    $id('crosshair').classList.add('locked');
+    setTimeout(function(){$id('crosshair').classList.remove('locked');},400);
+    toast('📍 位置已锁定！去设置→定位→关再开 生效');
+    updateStatus();
+  }).catch(function(){
+    toast('❌ 保存失败，检查网络或 Token');
+  }).finally(function(){
+    elBtnLock.classList.remove('locking');
+    elBtnLockLabel.textContent='锁定';
+  });
+}
+elBtnLock.addEventListener('click',lockLocation);
+
+/* ─── Drawer expand/collapse ─────────────────────────────── */
+var drawer=$id('drawer');
+var drawerHandle=$id('drawer-handle');
+
+function setDrawerExpanded(v){
+  drawerExpanded=v;
+  elDrawerExpanded.classList.toggle('open',v);
+}
+
+// Tap handle to toggle
+drawerHandle.addEventListener('click',function(){setDrawerExpanded(!drawerExpanded);});
+
+// Touch drag on drawer
+var touchStartY=0,touchDragging=false;
+drawer.addEventListener('touchstart',function(e){
+  touchStartY=e.touches[0].clientY;
+  touchDragging=true;
+},{ passive:true });
+drawer.addEventListener('touchend',function(e){
+  if(!touchDragging)return;
+  touchDragging=false;
+  var delta=touchStartY-e.changedTouches[0].clientY;
+  if(Math.abs(delta)>30){setDrawerExpanded(delta>0);}
+},{ passive:true });
+
+/* ─── Favorites ──────────────────────────────────────────── */
+function loadFavorites(){
+  fetch(API('/favorites'))
+    .then(function(r){return r.json();})
+    .then(function(a){favorites=a||[];renderFavorites();})
+    .catch(function(){});
+}
+
+function renderFavorites(){
+  elFavBadge.textContent=favorites.length;
+  elFavBadge.style.opacity=favorites.length?'1':'0';
+  if(!favorites.length){
+    elFavList.innerHTML='';elFavList.appendChild(elFavEmpty);
+    return;
+  }
+  elFavList.innerHTML='';
+  favorites.forEach(function(f){
+    var item=document.createElement('div');item.className='fav-item';
+    item.innerHTML=
+      '<div class="fav-icon">📍</div>'
+      +'<div class="fav-info">'
+        +'<div class="fav-name">'+escHtml(f.name)+'</div>'
+        +'<div class="fav-coords">'+f.latitude.toFixed(5)+', '+f.longitude.toFixed(5)+'</div>'
+      +'</div>'
+      +'<button class="fav-del" data-id="'+f.id+'">🗑</button>';
+
+    // Jump to location on tap
+    item.addEventListener('click',function(e){
+      if(e.target.classList.contains('fav-del'))return;
+      var disp=currentLayer==='osm'?[f.latitude,f.longitude]:GCJ.w2g(f.latitude,f.longitude);
+      map.setView([disp[0],disp[1]],15,{animate:true});
+      closeFavPanel();
+    });
+
+    // Delete
+    item.querySelector('.fav-del').addEventListener('click',function(e){
+      e.stopPropagation();
+      deleteFavorite(f.id);
+    });
+
+    elFavList.appendChild(item);
+  });
+}
+
+function deleteFavorite(id){
+  fetch(API('/favorites/'+id),{method:'DELETE'})
+    .then(function(){loadFavorites();toast('已删除');})
+    .catch(function(){toast('删除失败');});
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* Favorites panel open/close */
+function openFavPanel(){
+  favPanelOpen=true;
+  $id('fav-panel').classList.add('open');
+  elOverlay.classList.add('visible');
+}
+function closeFavPanel(){
+  favPanelOpen=false;
+  $id('fav-panel').classList.remove('open');
+  elOverlay.classList.remove('visible');
+}
+$id('fav-btn').addEventListener('click',function(){favPanelOpen?closeFavPanel():openFavPanel();});
+$id('fav-close').addEventListener('click',closeFavPanel);
+elOverlay.addEventListener('click',function(){
+  closeFavPanel();
+  $id('layer-menu').style.display='none';
+});
+
+/* Add favorite flow */
+$id('btn-fav-add').addEventListener('click',function(){showSaveModal();});
+
+function showSaveModal(){
+  $id('modal-coords-hint').textContent=WGS.lat.toFixed(5)+', '+WGS.lng.toFixed(5);
+  $id('modal-name').value='';
+  $id('modal-backdrop').classList.add('open');
+  setTimeout(function(){$id('modal-name').focus();},200);
+}
+$id('modal-cancel').addEventListener('click',function(){$id('modal-backdrop').classList.remove('open');});
+$id('modal-confirm').addEventListener('click',saveFavorite);
+$id('modal-name').addEventListener('keydown',function(e){if(e.key==='Enter')saveFavorite();});
+function saveFavorite(){
+  var name=$id('modal-name').value.trim()||'未命名';
+  var altVal=$id('inp-alt').value?parseFloat($id('inp-alt').value):altitude;
+  var payload={
+    name:name,latitude:WGS.lat,longitude:WGS.lng,
+    altitude:altVal||null,
+    horizontalAccuracy:parseFloat($id('inp-hacc').value)||39,
+    verticalAccuracy:parseFloat($id('inp-vacc').value)||1000
+  };
+  fetch(API('/favorites'),{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(function(r){return r.json();})
+    .then(function(){
+      $id('modal-backdrop').classList.remove('open');
+      loadFavorites();
+      toast('⭐ 已加入收藏');
+    }).catch(function(){toast('收藏失败');});
+}
+
+/* Layer menu */
+$id('layer-btn').addEventListener('click',function(e){
+  e.stopPropagation();
+  var m=$id('layer-menu');
+  m.style.display=m.style.display==='block'?'none':'block';
+});
+document.querySelectorAll('.layer-item').forEach(function(el){
+  el.addEventListener('click',function(){switchLayer(el.dataset.layer);});
+});
+document.addEventListener('click',function(e){
+  if(!$id('layer-btn').contains(e.target)&&!$id('layer-menu').contains(e.target)){
+    $id('layer-menu').style.display='none';
+  }
+});
+
+/* ─── Init: load current coords from server ─────────────── */
+fetch(API('/loc.json'))
+  .then(function(r){return r.json();})
+  .then(function(d){
+    WGS={lat:d.latitude||37.3349,lng:d.longitude||-122.00902};
+    lockedWGS={lat:WGS.lat,lng:WGS.lng};
+    altitude=d.altitude||null;
+    hacc=d.horizontalAccuracy||39;
+    vacc=d.verticalAccuracy||1000;
+    $id('inp-hacc').placeholder=hacc;
+    $id('inp-vacc').placeholder=vacc;
+    if(altitude!==null)$id('inp-alt').placeholder=Math.round(altitude);
+    initMap(WGS.lat,WGS.lng);
+    updateBubble();
+    updateStatus();
+    loadFavorites();
+  })
+  .catch(function(){
+    // fallback: Apple Park
+    initMap(37.3349,-122.00902);
+    updateBubble();
+    updateStatus();
+    loadFavorites();
+    toast('⚠️ 无法连接服务器，请检查 Token');
+  });
+
+})();
+</script>
+</body>
+</html>

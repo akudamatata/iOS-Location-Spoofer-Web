@@ -1,0 +1,13 @@
+services:
+  gps-spoofer:
+    build: .
+    container_name: gps-spoofer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - PORT=8080
+      - TOKEN=${TOKEN}
+      - DATA_DIR=/data
