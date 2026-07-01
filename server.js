@@ -8,6 +8,7 @@ const url  = require('url');
 /* ── Config ─────────────────────────────────────────────── */
 const PORT       = parseInt(process.env.PORT     || '8080', 10);
 const TOKEN      = process.env.TOKEN             || '';
+const AMAP_KEY   = process.env.AMAP_KEY          || '';
 const DATA_DIR   = process.env.DATA_DIR          || '/data';
 const LOC_FILE   = path.join(DATA_DIR, 'loc.json');
 const FAV_FILE   = path.join(DATA_DIR, 'favorites.json');
@@ -181,7 +182,7 @@ async function handler(req, res) {
 
   /* ─ GET / → index.html with injected config ─ */
   if (method === 'GET' && (pathname === '/' || pathname === '')) {
-    return serveFile(res, path.join(PUBLIC_DIR, 'index.html'), { token: TOKEN });
+    return serveFile(res, path.join(PUBLIC_DIR, 'index.html'), { token: TOKEN, amapKey: AMAP_KEY });
   }
 
   /* ─ Static assets ─ */
@@ -201,6 +202,7 @@ http.createServer((req, res) => {
   });
 }).listen(PORT, () => {
   console.log(`\n🛰  GPS Spoofer Web  →  http://localhost:${PORT}`);
-  console.log(`   Token : ${TOKEN ? TOKEN.slice(0, 4) + '****' : '(none – open access)'}`);
-  console.log(`   Data  : ${DATA_DIR}\n`);
+  console.log(`   Token    : ${TOKEN ? TOKEN.slice(0, 4) + '****' : '(none – open access)'}`);
+  console.log(`   AMap Key : ${AMAP_KEY ? 'Configured ✓' : '(none – search defaults to OSM)'}`);
+  console.log(`   Data     : ${DATA_DIR}\n`);
 });

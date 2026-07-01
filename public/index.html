@@ -746,6 +746,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Dis
 /* ─── Runtime config injected by server ─────────────────── */
 var CFG = window.__CFG__ || {};
 var TOKEN = CFG.token || '';
+var AMAP_KEY = CFG.amapKey || '';
 var API = function(p){ return p + (TOKEN ? '?token=' + encodeURIComponent(TOKEN) : ''); };
 
 /* ─── GCJ-02 ↔ WGS-84 (China map offset correction) ─────── */
@@ -926,31 +927,64 @@ function doSearch(){
   box.innerHTML='<div class="result-row"><span class="name">搜索中…</span></div>';
   box.style.display='block';
 
-  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q='+encodeURIComponent(q))
-    .then(function(r){return r.json();})
-    .then(function(a){
-      box.innerHTML='';
-      if(!a||!a.length){
-        box.innerHTML='<div class="result-row"><span class="name">没找到结果</span></div>';
-        return;
-      }
-      a.forEach(function(it){
-        var row=document.createElement('div');row.className='result-row';
-        var parts=it.display_name.split(',');
-        row.innerHTML='<div class="name">'+parts[0]+'</div>'
-                     +'<div class="sub">'+parts.slice(1,3).join(',')+'</div>';
-        row.addEventListener('click',function(){
-          var wLat=+it.lat,wLng=+it.lon;
-          var disp=currentLayer==='osm'?[wLat,wLng]:GCJ.w2g(wLat,wLng);
-          map.setView([disp[0],disp[1]],16,{animate:true});
-          box.style.display='none';
-          $id('search-input').value='';
+  if (AMAP_KEY) {
+    fetch('https://restapi.amap.com/v3/assistant/inputtips?keywords='+encodeURIComponent(q)+'&key='+AMAP_KEY)
+      .then(function(r){return r.json();})
+      .then(function(d){
+        box.innerHTML='';
+        if(d.status !== '1' || !d.tips || !d.tips.length){
+          box.innerHTML='<div class="result-row"><span class="name">未找到结果</span></div>';
+          return;
+        }
+        d.tips.forEach(function(it){
+          if (!it.location || typeof it.location !== 'string') return;
+          var row=document.createElement('div');row.className='result-row';
+          var locParts = it.location.split(',');
+          var gcjLng = parseFloat(locParts[0]);
+          var gcjLat = parseFloat(locParts[1]);
+          row.innerHTML='<div class="name">'+escHtml(it.name)+'</div>'
+                       +'<div class="sub">'+escHtml((it.district || '') + (it.address || ''))+'</div>';
+          row.addEventListener('click',function(){
+            var disp = currentLayer === 'osm' ? GCJ.g2w(gcjLat, gcjLng) : [gcjLat, gcjLng];
+            map.setView([disp[0], disp[1]], 16, {animate:true});
+            box.style.display='none';
+            $id('search-input').value='';
+          });
+          box.appendChild(row);
         });
-        box.appendChild(row);
+        if (!box.children.length) {
+          box.innerHTML='<div class="result-row"><span class="name">无有效定位结果</span></div>';
+        }
+      }).catch(function(){
+        box.innerHTML='<div class="result-row"><span class="name">搜索失败，请重试</span></div>';
       });
-    }).catch(function(){
-      box.innerHTML='<div class="result-row"><span class="name">搜索失败，请重试</span></div>';
-    });
+  } else {
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q='+encodeURIComponent(q))
+      .then(function(r){return r.json();})
+      .then(function(a){
+        box.innerHTML='';
+        if(!a||!a.length){
+          box.innerHTML='<div class="result-row"><span class="name">未找到结果 (国内搜索建议配置高德 Key)</span></div>';
+          return;
+        }
+        a.forEach(function(it){
+          var row=document.createElement('div');row.className='result-row';
+          var parts=it.display_name.split(',');
+          row.innerHTML='<div class="name">'+parts[0]+'</div>'
+                       +'<div class="sub">'+parts.slice(1,3).join(',')+'</div>';
+          row.addEventListener('click',function(){
+            var wLat=+it.lat,wLng=+it.lon;
+            var disp=currentLayer==='osm'?[wLat,wLng]:GCJ.w2g(wLat,wLng);
+            map.setView([disp[0], disp[1]], 16, {animate:true});
+            box.style.display='none';
+            $id('search-input').value='';
+          });
+          box.appendChild(row);
+        });
+      }).catch(function(){
+        box.innerHTML='<div class="result-row"><span class="name">搜索失败，请重试</span></div>';
+      });
+  }
 }
 $id('search-btn').addEventListener('click',doSearch);
 $id('search-input').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch();});
@@ -984,10 +1018,10 @@ function lockLocation(){
     lockedWGS={lat:WGS.lat,lng:WGS.lng};
     $id('crosshair').classList.add('locked');
     setTimeout(function(){$id('crosshair').classList.remove('locked');},400);
-    toast('📍 位置已锁定！去设置→定位→关再开 生效');
+    toast('位置已锁定！请前往系统 定位服务 重新开关生效');
     updateStatus();
   }).catch(function(){
-    toast('❌ 保存失败，检查网络或 Token');
+    toast('保存失败，请检查网络或 Token');
   }).finally(function(){
     elBtnLock.classList.remove('locking');
     elBtnLockLabel.textContent='锁定';
@@ -1111,12 +1145,12 @@ $id('btn-locate').addEventListener('click', function(e){
       var lng = pos.coords.longitude;
       var disp = currentLayer === 'osm' ? [lat, lng] : GCJ.w2g(lat, lng);
       map.setView([disp[0], disp[1]], 16, {animate: true});
-      toast('🎯 已定位到当前真实位置');
+      toast('已定位到当前真实位置');
     }, function(err) {
-      toast('⚠️ 定位失败: ' + err.message);
+      toast('定位失败: ' + err.message);
     }, {enableHighAccuracy: true, timeout: 6000});
   } else {
-    toast('⚠️ 您的浏览器不支持定位功能');
+    toast('您的浏览器不支持定位功能');
   }
 });
 
@@ -1146,7 +1180,7 @@ function saveFavorite(){
     .then(function(){
       $id('modal-backdrop').classList.remove('open');
       loadFavorites();
-      toast('⭐ 已加入收藏');
+      toast('已加入收藏');
     }).catch(function(){toast('收藏失败');});
 }
 
@@ -1188,8 +1222,12 @@ fetch(API('/loc.json'))
     updateBubble();
     updateStatus();
     loadFavorites();
-    toast('⚠️ 无法连接服务器，请检查 Token');
+    toast('无法连接服务器，请检查 Token');
   });
+
+if (!AMAP_KEY) {
+  $id('search-input').placeholder = '搜索地点 (国内搜索建议配置高德 Key)';
+}
 
 })();
 </script>
