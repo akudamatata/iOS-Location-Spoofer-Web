@@ -33,24 +33,25 @@
 点击右上角的 Fork，将本仓库 Fork 到您的 GitHub 账号下。
 
 ### 3. 创建 Pages 项目
-1. 在 Cloudflare Dashboard 进入 **Workers & Pages** -> **Overview**，点击 **Create application** -> **Pages** -> **Connect to Git**。
-2. 授权连接您的 GitHub，选择您 Fork 的仓库。
-3. 在构建设置 (Build settings) 页面：
-   - **Framework preset**: `None`
-   - **Build command**: (留空)
-   - **Build output directory**: `public`
-4. 展开 **Environment variables (advanced)**，添加以下变量：
+1. 在 Cloudflare Dashboard 侧边栏进入 **Workers & Pages** -> **Overview**，点击右上角 **Create application** (创建应用程序)。
+2. ⚠️ **关键：请务必点击顶部的「Pages (网页)」标签卡**（切勿停留在默认的 Workers 标签卡上），然后点击 **Connect to Git** (连接到 Git)。
+3. 授权连接您的 GitHub，选择您刚才 Fork 的仓库。
+4. 在构建设置 (Build settings) 页面：
+   - **Framework preset** (框架预设): 选择 `None`
+   - **Build command** (构建命令): **留空**（必须为空）
+   - **Build output directory** (构建输出目录): 填写 `public`
+5. 展开 **Environment variables (advanced)** (环境变量)，添加以下变量：
    - `TOKEN`: 您的安全密码（必填，用于网页访问与 Shadowrocket 提取坐标）
    - `AMAP_KEY`: 您的高德地图 Web 服务 Key（用于高精度国内地名搜索，可选但强烈推荐）
-5. 点击 **Save and Deploy**（保存并部署）。首次部署可能会因为没有绑定 KV 而出现数据保存报错，请继续下一步。
+6. 点击 **Save and Deploy**（保存并部署）。首次部署由于尚未绑定 KV 会提示无法保存数据，这是正常的，请继续下一步。
 
 ### 4. 绑定 KV 命名空间
 1. 部署完成后，进入该 Pages 项目的详情页，点击顶部的 **Settings** -> **Functions**。
 2. 往下滚动找到 **KV namespace bindings**。
 3. 点击 **Add binding**：
-   - **Variable name** 填入 `SPOOFER_DATA`。
-   - **KV namespace** 选择您在第一步创建的 `SPOOFER_DATA`。
-4. 重新部署一次（在项目概览页点击最近一次部署的旁边的 "..." -> "Retry deployment"）即可生效。
+   - **Variable name (变量名称)**: 填入 `SPOOFER_DATA` （必须完全一致）
+   - **KV namespace (KV 命名空间)**: 选择您在第一步创建的 `SPOOFER_DATA`。
+4. 重新部署一次生效：回到该项目的 **Deployments (部署)** 页面，点击列表最上面一次部署右侧的 `...` 图标 -> **Retry deployment (重试部署)**。
 
 部署完成后，您将获得一个类似 `https://your-project.pages.dev` 的免费域名，可以直接通过该域名访问管理面板！
 
