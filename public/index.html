@@ -369,6 +369,20 @@ html.dark .config-code-box{background:rgba(0,0,0,0.35);color:var(--text);border-
   z-index:20;
   display:flex;gap:8px;align-items:center;
 }
+#search-input{
+  flex:1;
+  height:48px;
+  padding:0 16px;
+  font-size:16px;font-weight:400;
+  color:var(--text);
+  background:var(--glass-light);
+  backdrop-filter:var(--blur-md);
+  -webkit-backdrop-filter:var(--blur-md);
+  border:1px solid var(--glass-light-border);
+  box-shadow:var(--shadow-float);
+  border-radius:var(--r-md);
+  transition:all 0.3s var(--bounce);
+}
 #search-input::placeholder{color:var(--text-secondary);}
 #search-input:focus{
   outline:none;
