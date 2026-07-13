@@ -369,15 +369,73 @@ html.dark .config-code-box{background:rgba(0,0,0,0.35);color:var(--text);border-
   z-index:20;
   display:flex;gap:8px;align-items:center;
 }
-#search-input{
-  flex:1;
-  height:48px;
-  padding:0 16px;
-  font-size:16px;font-weight:400;
-  color:var(--text);
-  background:var(--glass-light);
-  backdrop-filter:var(--blur-md);
-  -webkit-backdrop-filter:var(--blur-md);
+#search-input::placeholder{color:var(--text-secondary);}
+#search-input:focus{
+  outline:none;
+  background:var(--glass-light-hover);
+}
+html.dark #search-input{color:var(--text);}
+html.dark #search-input:focus{background:var(--glass-dark-hover);}
+
+#search-history {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 56px;
+  margin-top: 8px;
+  background: var(--glass-light);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  transition: all 0.2s var(--bounce);
+  transform-origin: top;
+}
+#search-history.hidden {
+  opacity: 0;
+  transform: scaleY(0.95);
+  pointer-events: none;
+}
+.history-item {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid var(--border-light);
+}
+.history-item:active {
+  background: var(--bg-hover);
+}
+.history-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.history-clear {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--system-red);
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 59, 48, 0.05);
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+.history-clear:active {
+  background: rgba(255, 59, 48, 0.15);
+}
+html.dark #search-history {
+  background: var(--glass-dark);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
   border:1px solid var(--glass-light-border);
   box-shadow:var(--shadow-float);
   border-radius:var(--r-md);
@@ -826,6 +884,7 @@ html.dark .config-code-box{background:rgba(0,0,0,0.35);color:var(--text);border-
   <button id="search-btn" aria-label="搜索">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
   </button>
+  <div id="search-history" class="hidden"></div>
 </div>
 <div id="search-results"></div>
 
@@ -1183,9 +1242,57 @@ function switchLayer(name){
 
 /* ─── Search ─────────────────────────────────────────────── */
 var searchDebounce=null;
+var searchHistory = [];
+var HISTORY_KEY = 'ios_loc_spoofer_history';
+
+function loadHistory() {
+  try {
+    var raw = localStorage.getItem(HISTORY_KEY);
+    if(raw) searchHistory = JSON.parse(raw);
+  } catch(e){}
+}
+function saveHistory(query) {
+  if(!query.trim()) return;
+  query = query.trim();
+  searchHistory = searchHistory.filter(function(q) { return q !== query; });
+  searchHistory.unshift(query);
+  if(searchHistory.length > 10) searchHistory.pop();
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(searchHistory));
+  renderHistory();
+}
+function renderHistory() {
+  var container = $id('search-history');
+  if(searchHistory.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  var html = '';
+  searchHistory.forEach(function(q) {
+    html += '<div class="history-item" onclick="onHistoryClick(\'' + q.replace(/'/g, "\\'") + '\')">'
+          + '<svg class="history-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
+          + '<span>' + escHtml(q) + '</span>'
+          + '</div>';
+  });
+  html += '<div class="history-clear" onclick="clearHistory()">清除历史记录</div>';
+  container.innerHTML = html;
+}
+function onHistoryClick(query) {
+  $id('search-input').value = query;
+  doSearch();
+}
+function clearHistory() {
+  searchHistory = [];
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+  $id('search-input').focus();
+}
+
 function doSearch(){
   var q=$id('search-input').value.trim();
   if(!q)return;
+  saveHistory(q);
+  $id('search-input').blur(); // 隐藏历史记录下拉
+
 
   // 坐标直接跳转：支持 "lat, lng" 或 "lat lng" 格式
   var coordMatch=q.match(/^\s*(-?\d+\.?\d*)\s*[,\s]\s*(-?\d+\.?\d*)\s*$/);
@@ -1265,6 +1372,17 @@ function doSearch(){
 }
 $id('search-btn').addEventListener('click',doSearch);
 $id('search-input').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch();});
+$id('search-input').addEventListener('focus', function() {
+  if(searchHistory.length > 0) {
+    $id('search-history').classList.remove('hidden');
+  }
+});
+$id('search-input').addEventListener('blur', function() {
+  setTimeout(function() {
+    $id('search-history').classList.add('hidden');
+  }, 200);
+});
+
 document.addEventListener('click',function(e){
   if(!$id('search-bar').contains(e.target)&&!$id('search-results').contains(e.target)){
     $id('search-results').style.display='none';
@@ -1696,6 +1814,8 @@ handleAuthentication(function(activeToken) {
       initMap(WGS.lat,WGS.lng);
       updateBubble();
       updateStatus();
+      loadHistory();
+      renderHistory();
       loadFavorites();
     })
     .catch(function(){
@@ -1703,6 +1823,8 @@ handleAuthentication(function(activeToken) {
       initMap(39.90872,116.39748);
       updateBubble();
       updateStatus();
+      loadHistory();
+      renderHistory();
       loadFavorites();
       toast('无法连接服务器，请检查 Token');
     });
