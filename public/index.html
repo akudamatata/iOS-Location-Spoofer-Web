@@ -1249,10 +1249,8 @@ function updateFavStar(){
   var icon=$id('bubble-fav-icon');
   if(!icon)return;
   var isFav=favorites.some(function(f){
-    var dlat=f.latitude-WGS.lat;
-    var dlng=f.longitude-WGS.lng;
-    // ~100m tolerance (1e-3 deg ≈ 111m)
-    return Math.sqrt(dlat*dlat+dlng*dlng)<0.001;
+    return f.latitude.toFixed(6)===WGS.lat.toFixed(6)
+        && f.longitude.toFixed(6)===WGS.lng.toFixed(6);
   });
   icon.setAttribute('fill', isFav ? 'currentColor' : 'none');
 }
@@ -1362,11 +1360,10 @@ function saveFavorite(){
   var name=$id('modal-name').value.trim()||'未命名';
   var altVal=$id('inp-alt').value?parseFloat($id('inp-alt').value):altitude;
 
-  // 去重：已有相同坐标（100m 以内）则不重复收藏
+  // 去重：小数点后六位完全一致则不重复收藏
   var duplicate=favorites.some(function(f){
-    var dlat=f.latitude-WGS.lat;
-    var dlng=f.longitude-WGS.lng;
-    return Math.sqrt(dlat*dlat+dlng*dlng)<0.001;
+    return f.latitude.toFixed(6)===WGS.lat.toFixed(6)
+        && f.longitude.toFixed(6)===WGS.lng.toFixed(6);
   });
   if(duplicate){
     $id('modal-backdrop').classList.remove('open');
