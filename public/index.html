@@ -1330,19 +1330,21 @@ function renderHistory() {
   }
   var html = '';
   searchHistory.forEach(function(q) {
-    html += '<div class="history-item" onclick="onHistoryClick(\'' + q.replace(/'/g, "\\'") + '\')">'
+    html += '<div class="history-item" onclick="onHistoryClick(event, \'' + q.replace(/'/g, "\\'") + '\')">'
           + '<svg class="history-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
           + '<span>' + escHtml(q) + '</span>'
           + '</div>';
   });
-  html += '<div class="history-clear" onclick="clearHistory()">清除历史记录</div>';
+  html += '<div class="history-clear" onclick="clearHistory(event)">清除历史记录</div>';
   container.innerHTML = html;
 }
-window.onHistoryClick = function(query) {
+window.onHistoryClick = function(e, query) {
+  if (e) e.stopPropagation();
   $id('search-input').value = query;
   doSearch();
 }
-window.clearHistory = function() {
+window.clearHistory = function(e) {
+  if (e) e.stopPropagation();
   searchHistory = [];
   localStorage.removeItem(HISTORY_KEY);
   renderHistory();
