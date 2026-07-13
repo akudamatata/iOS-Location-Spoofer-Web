@@ -1338,11 +1338,11 @@ function renderHistory() {
   html += '<div class="history-clear" onclick="clearHistory()">清除历史记录</div>';
   container.innerHTML = html;
 }
-function onHistoryClick(query) {
+window.onHistoryClick = function(query) {
   $id('search-input').value = query;
   doSearch();
 }
-function clearHistory() {
+window.clearHistory = function() {
   searchHistory = [];
   localStorage.removeItem(HISTORY_KEY);
   renderHistory();
@@ -1353,7 +1353,8 @@ function doSearch(){
   var q=$id('search-input').value.trim();
   if(!q)return;
   saveHistory(q);
-  $id('search-input').blur(); // 隐藏历史记录下拉
+  $id('search-input').blur(); // 取消焦点
+  $id('search-history').classList.add('hidden'); // 隐藏历史记录下拉
 
 
   // 坐标直接跳转：支持 "lat, lng" 或 "lat lng" 格式
