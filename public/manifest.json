@@ -4,8 +4,8 @@
   "description": "iOS GPS 模拟定位 Web 管理面板",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#f2efe9",
+  "theme_color": "#f2efe9",
   "orientation": "portrait",
   "icons": [
     {
