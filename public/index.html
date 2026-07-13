@@ -1366,13 +1366,16 @@ function loadFavorites(){
 }
 
 /* Update the bubble star icon: solid if current position is already a favorite */
+// 坐标匹配：容差 0.000015° ≈ 1.7m，用于消除 WGS84↔GCJ02 转换的浮点误差
+function coordMatch(f, wgs) {
+  return Math.abs(f.latitude  - wgs.lat) < 0.000015
+      && Math.abs(f.longitude - wgs.lng) < 0.000015;
+}
+
 function updateFavStar(){
   var icon=$id('bubble-fav-icon');
   if(!icon)return;
-  var isFav=favorites.some(function(f){
-    return f.latitude.toFixed(6)===WGS.lat.toFixed(6)
-        && f.longitude.toFixed(6)===WGS.lng.toFixed(6);
-  });
+  var isFav=favorites.some(function(f){ return coordMatch(f, WGS); });
   icon.setAttribute('fill', isFav ? 'currentColor' : 'none');
 }
 
@@ -1448,10 +1451,7 @@ elOverlay.addEventListener('click',function(){
 $id('bubble-fav-btn').addEventListener('click', function(e){
   e.stopPropagation();
   // 已收藏 → 取消收藏；未收藏 → 弹出新增窗口
-  var existing=favorites.find(function(f){
-    return f.latitude.toFixed(6)===WGS.lat.toFixed(6)
-        && f.longitude.toFixed(6)===WGS.lng.toFixed(6);
-  });
+  var existing=favorites.find(function(f){ return coordMatch(f, WGS); });
   if(existing){
     deleteFavorite(existing.id);
     toast('已取消收藏');
@@ -1491,11 +1491,8 @@ function saveFavorite(){
   var name=$id('modal-name').value.trim()||'未命名';
   var altVal=$id('inp-alt').value?parseFloat($id('inp-alt').value):altitude;
 
-  // 去重：小数点后六位完全一致则不重复收藏
-  var duplicate=favorites.some(function(f){
-    return f.latitude.toFixed(6)===WGS.lat.toFixed(6)
-        && f.longitude.toFixed(6)===WGS.lng.toFixed(6);
-  });
+  // 去重：相同位置（容差 0.000015°）不重复收藏
+  var duplicate=favorites.some(function(f){ return coordMatch(f, WGS); });
   if(duplicate){
     $id('modal-backdrop').classList.remove('open');
     toast('该位置已在收藏夹中');
