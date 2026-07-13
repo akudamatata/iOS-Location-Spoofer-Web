@@ -17,7 +17,7 @@
    RESET & BASE
 ═══════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;background:#f2efe9}
+html,body{width:100vw;height:100vh;height:100dvh;height:-webkit-fill-available;overflow:hidden;font-family:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;background:#f2efe9}
 
 /* ═══════════════════════════════════════════════
    LIQUID GLASS TOKENS  (iOS 26 / Apple 2026)
@@ -244,7 +244,7 @@ html.dark .config-code-box{background:rgba(0,0,0,0.35);color:var(--text);border-
    MAP (full viewport)
 ═══════════════════════════════════════════════ */
 #map{
-  position:fixed;inset:0;width:100%;height:100%;z-index:0;
+  position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;height:-webkit-fill-available;z-index:0;
 }
 .leaflet-control-zoom{display:none}
 .leaflet-control-attribution{
