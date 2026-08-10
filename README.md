@@ -1,4 +1,4 @@
-# ios-location-spoofer-web
+# iOS-Location-Spoofer-Web
 
 📱 基于 **Shadowrocket MITM** 方案的 iOS GPS 模拟定位 Web 管理面板。
 
