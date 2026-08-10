@@ -21,6 +21,39 @@
 | 📲 | **PWA 支持** | Safari「添加到主屏幕」后全屏运行，体验接近原生 App |
 | 🐳 | **极简部署** | Cloudflare Pages 全局边缘节点 Serverless 部署，零服务器维护成本 |
 
+### 📸 界面预览
+
+<table align="center">
+  <tr>
+    <td align="center" width="33%">
+      <img src="./docs/screenshots/1-map-picker.jpg" alt="全屏地图选点" width="100%"><br>
+      <sub><b>全屏地图选点</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./docs/screenshots/2-favorites.jpg" alt="智能收藏夹" width="100%"><br>
+      <sub><b>智能收藏夹</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./docs/screenshots/3-shadowrocket-config.jpg" alt="设置与小火箭配置" width="100%"><br>
+      <sub><b>设置与小火箭配置</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <img src="./docs/screenshots/4-map-layers.jpg" alt="多图层图源切换" width="100%"><br>
+      <sub><b>多图层图源切换</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./docs/screenshots/5-advanced-params.jpg" alt="卫星图与高级参数" width="100%"><br>
+      <sub><b>卫星图与高级参数</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./docs/screenshots/6-search-history.jpg" alt="地点搜索与历史" width="100%"><br>
+      <sub><b>地点搜索与历史</b></sub>
+    </td>
+  </tr>
+</table>
+
 ---
 
 ## 🛠 快速部署 (Cloudflare Pages)
