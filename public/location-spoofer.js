@@ -1,4 +1,12 @@
-/*
+/**
+ * iOS Location Spoofer Web
+ * 
+ * Copyright (c) 2026 akudamatata (https://github.com/akudamatata/iOS-Location-Spoofer-Web)
+ * Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+ * 
+ * ⚠️【特别声明】：本项目完全免费开源，严禁以任何形式进行二次售卖、转售、商业收费代搭建、打包牟利等行为！
+ * 若您是通过付费渠道获取本项目的，请立即申请退款并举报不良商家！
+ * 
  * 拦截 Apple /clls/wloc 接口的回应，解 ARPC 封包，改 WiFi 热点和基站坐标，
  * 再按 Apple 的格式封回去返回给系统。
  *

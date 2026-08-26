@@ -1,5 +1,12 @@
 # iOS-Location-Spoofer-Web
 
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+> ### ⚠️ 【防骗与严禁倒卖声明】
+> 本项目为 **100% 免费开源项目**（唯一官方开源仓库：[akudamatata/iOS-Location-Spoofer-Web](https://github.com/akudamatata/iOS-Location-Spoofer-Web)），本项目遵循 **CC BY-NC-SA 4.0** 开源许可协议。
+> **「严禁任何个人或组织以任何形式进行二次售卖、转售、商业收费代搭建、打包牟利等行为」**。
+> 若您是通过闲鱼、淘宝、拼多多、付费微信群等任何渠道付费购买获得本项目的，**您已被欺诈，请立即向购买平台申请退款并举报不良商家！**
+
 📱 基于 **Shadowrocket MITM** 方案的 iOS GPS 模拟定位 Web 管理面板。
 
 采用 Apple 2026 **Liquid Glass（液态玻璃）** 视觉美学设计，全屏地图选点，支持 100% 独立离线自建托管。
@@ -141,9 +148,14 @@
 
 ---
 
-## 📄 开源授权
+## 📄 开源授权与使用条款
 
-MIT License
+本项目采用 **[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)** 许可协议。
+
+**核心约束条款：**
+* **署名 (Attribution)**：在衍生项目、教程或分享中必须保留原作者信息及本项目 GitHub 仓库链接。
+* **非商业性使用 (Non-Commercial)**：**「严禁以任何形式进行二次售卖、转售、商业收费代搭建、打包牟利等行为」**。
+* **相同方式共享 (Share-Alike)**：若您修改、转换或以此代码为基础进行创作，必须采用相同或兼容的 CC 协议进行开源共享。
 
 ---
 

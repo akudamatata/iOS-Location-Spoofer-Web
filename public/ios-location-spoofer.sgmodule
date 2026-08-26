@@ -1,6 +1,7 @@
 #!name=iOS Location Spoofer (Self-Hosted)
-#!desc=拦截 Apple 定位服务器回应的 GPS 坐标，替换成自定义位置。自建服务版，源自 mekos2772/ios-location-spoofer。
-#!homepage=https://github.com/mekos2772/ios-location-spoofer
+#!desc=拦截 Apple 定位服务器回应的 GPS 坐标，替换成自定义位置。【免费开源/严禁倒卖】唯一开源仓库: https://github.com/akudamatata/iOS-Location-Spoofer-Web
+#!homepage=https://github.com/akudamatata/iOS-Location-Spoofer-Web
+#!author=akudamatata
 
 [Script]
 iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=https://你的域名/location-spoofer.js,argument=mode=response&configUrl=https://你的域名/loc.json?token=你的Token&latitude=39.90872&longitude=116.39748&horizontalAccuracy=39&verticalAccuracy=1000&altitude=44&debug=false
