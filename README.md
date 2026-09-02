@@ -68,7 +68,7 @@
 
 | 平台 / 系统 / 软件 | 版本范围 | 支持状态 | 说明 |
 |---|---|---|---|
-| **iOS / iPadOS** | iOS 12.0 ~ iOS 26.x | 🟢 完美支持 | 覆盖所有主流正式版系统，稳定运行 |
+| **iOS / iPadOS** | iOS 12.0 ~ iOS 26.x | 🟢 完美支持 | 覆盖所有主流正式版系统，零 BigInt 纯原生实现，稳定运行 |
 | **iOS / iPadOS** | iOS 27 beta 1 ~ beta 5 | 🟢 完美支持 | 已跟进 WLOC 最小改写策略与封装扫描兜底 |
 | **iOS / iPadOS** | iOS 27 beta 6 及以上 | ⚠️ 系统受限 | 苹果在系统定位组件开启了强 TLS 证书固定（Pinning），目前所有 MITM 方案均受限 |
 | **Shadowrocket** | v2.2.x 及以上版本 | 🟢 完美支持 | 需开启 HTTPS 解密并信任 CA 证书 |
@@ -171,11 +171,9 @@
 
 ---
 
-## ⚖️ 声明、致谢与版权
+## ⚖️ 项目声明与免责条款
 
-1. **代码构成与原创性**：
-   - **应用层（Web 前端与 Serverless 后端）**：包括 Liquid Glass 设计系统、全屏地图选点、GCJ 纠偏、智能收藏夹、PWA 适配以及 Cloudflare Pages Functions 接口均为本项目**100% 自主独立研发编写**；
-   - **网络层（WLOC 协议解析）**：针对 Apple `/clls/wloc` 私有协议的拆包和改写原理，参考并借鉴了 **[mekos2772/ios-location-spoofer](https://github.com/mekos2772/ios-location-spoofer)** 的逆向分析思路，在此对原作者的开源贡献表示衷心感谢！
+1. **原创研发**：本项目全量源码（包括 Liquid Glass Web 前端设计、Cloudflare Pages Serverless 后端 API 体系、以及基于纯 JS 原生实现的 `location-spoofer.js` 核心代理拦截改写引擎）均为**100% 独立自主设计与研发编写**。
 2. **免责声明**：本项目仅供开发者用于地图开发测试、地理位置接口调试以及技术性学习研究，请勿用于非法用途。因违规使用产生的一切风险与后果由使用者自行承担。
 
 ---
