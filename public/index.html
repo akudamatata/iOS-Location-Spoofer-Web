@@ -1120,9 +1120,12 @@ html.dark #search-results::-webkit-scrollbar-thumb {
 
 /* ─── Runtime config injected by server ─────────────────── */
 var CFG = window.__CFG__ || {};
-var TOKEN = CFG.token || '';
+var HAS_TOKEN = CFG.hasToken === true;
 var AMAP_KEY = CFG.amapKey || '';
-var API = function(p){ return p + (TOKEN ? '?token=' + encodeURIComponent(TOKEN) : ''); };
+var API = function(p){ 
+  var t = localStorage.getItem('gps_token') || '';
+  return p + (t ? '?token=' + encodeURIComponent(t) : ''); 
+};
 
 /* ─── GCJ-02 ↔ WGS-84 (China map offset correction) ─────── */
 var GCJ = (function(){
@@ -1720,11 +1723,11 @@ function openConfigPanel() {
   
   // Dynamically build paths
   var domain = window.location.origin;
-  var tokenVal = localStorage.getItem('gps_token') || TOKEN || '';
+  var tokenVal = localStorage.getItem('gps_token') || '';
   
   // Format links
-  var moduleUrl = domain + '/ios-location-spoofer.sgmodule?token=' + encodeURIComponent(tokenVal);
-  var argText = 'configUrl=' + domain + '/loc.json?token=' + encodeURIComponent(tokenVal);
+  var moduleUrl = domain + '/ios-location-spoofer.sgmodule' + (tokenVal ? '?token=' + encodeURIComponent(tokenVal) : '');
+  var argText = 'configUrl=' + domain + '/loc.json' + (tokenVal ? '?token=' + encodeURIComponent(tokenVal) : '');
   
   $id('config-url-text').textContent = moduleUrl;
   $id('config-arg-text').textContent = argText;
@@ -1824,8 +1827,8 @@ function showLoginScreen(onSuccess) {
 }
 
 function handleAuthentication(onAuthenticated) {
-  if (!TOKEN) {
-    // Open access, no token required
+  if (!HAS_TOKEN) {
+    // Open access, no token required on server
     $id('login-overlay').style.display = 'none';
     localStorage.removeItem('gps_token');
     localStorage.removeItem('gps_session');
@@ -1856,7 +1859,7 @@ function handleAuthentication(onAuthenticated) {
 handleAuthentication(function(activeToken) {
   // Update API URL helper with cached token dynamically
   API = function(p) {
-    var t = activeToken || localStorage.getItem('gps_token') || TOKEN || '';
+    var t = activeToken || localStorage.getItem('gps_token') || '';
     return p + (t ? '?token=' + encodeURIComponent(t) : '');
   };
 
