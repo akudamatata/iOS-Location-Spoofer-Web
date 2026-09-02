@@ -4,7 +4,7 @@
 #!author=akudamatata
 
 [Script]
-iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=1048576,timeout=10,script-path=https://你的域名/location-spoofer.js,argument=mode=response&configUrl=https://你的域名/loc.json?token=你的Token&latitude=39.90872&longitude=116.39748&horizontalAccuracy=39&verticalAccuracy=1000&altitude=44&debug=false
+iOS Location Spoofer = type=http-response,pattern=^https?:\/\/(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)\/clls\/wloc(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=0,timeout=30,script-path=https://你的域名/location-spoofer.js,argument=mode=response&configUrl=https://你的域名/loc.json?token=你的Token&latitude=39.90872&longitude=116.39748&horizontalAccuracy=39&verticalAccuracy=1000&altitude=44&debug=false
 
 [MITM]
 hostname = %APPEND% gs-loc.apple.com, gs-loc-cn.apple.com, gsp-ssl.ls.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com

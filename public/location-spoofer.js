@@ -2,16 +2,21 @@
  * iOS Location Spoofer Web
  * 
  * Copyright (c) 2026 akudamatata (https://github.com/akudamatata/iOS-Location-Spoofer-Web)
- * Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
  * 
  * ⚠️【特别声明】：本项目完全免费开源，严禁以任何形式进行二次售卖、转售、商业收费代搭建、打包牟利等行为！
  * 若您是通过付费渠道获取本项目的，请立即申请退款并举报不良商家！
  * 
+ * 本项目 Web 前端界面与 Serverless 后端架构遵循 CC BY-NC-SA 4.0 许可证。
+ * 核心网络拦截脚本底层协议解析参考并派生自 mekos2772/ios-location-spoofer (AGPL-3.0) 的 WLOC 逆向研究。
+ *
+ * iOS 12 compatibility build: Protobuf int64 implementation avoids BigInt syntax
+ * so JavaScriptCore on iOS 12+ can parse and execute this file natively.
+ *
  * 拦截 Apple /clls/wloc 接口的回应，解 ARPC 封包，改 WiFi 热点和基站坐标，
  * 再按 Apple 的格式封回去返回给系统。
  *
  * 主要流程：
- *   ARPC 拆包 → protobuf 解字段 → 替换 Location 子消息的坐标/精度/运动状态
+ *   ARPC 拆包 → protobuf 解字段 → 最小改写 Location 子消息的坐标/精度
  *   → protobuf 重新打包 → 按原格式（ARPC / marker / synthetic）封回
  */
 (function () {
@@ -45,6 +50,10 @@
   var APPLE_WLOC_MARKER = bytesFromArray([0x00, 0x00, 0x00, 0x01, 0x00, 0x00]);
   var ROOT_DROP_FIELDS = {};
   var CELL_RESPONSE_FIELDS = { 22: true, 24: true };
+  // 位置子消息只改写 纬度(1)/经度(2)/精度(3)，其余字段（海拔、垂直精度、
+  // 运动状态、unknown 等）一律原样透传——改写或新增的字段越多，越容易被
+  // iOS 判定为非法响应，导致 “定位不可用”。
+  var LOCATION_REPLACED_FIELDS = { 1: true, 2: true, 3: true };
 
   function bytesFromArray(values) {
     return new Uint8Array(values);
@@ -236,52 +245,127 @@
     return out;
   }
 
-  function encodeVarintUnsigned(value) {
-    var v = typeof value === "bigint" ? value : BigInt(value);
-    if (v < 0n) {
-      throw new Error("negative unsigned varint");
+  // iOS 12 JavaScriptCore cannot parse BigInt literals. Represent uint64 values
+  // as unsigned high/low 32-bit words so negative coordinates still use the
+  // canonical 10-byte protobuf int64 encoding.
+  var UINT32_BASE = 4294967296;
+  var MAX_SAFE_INTEGER = 9007199254740991;
+
+  function uint64FromUnsignedNumber(value) {
+    var number = Number(value);
+    if (!Number.isFinite(number) || number < 0 || Math.floor(number) !== number || number > MAX_SAFE_INTEGER) {
+      throw new Error("invalid unsigned varint value: " + value);
+    }
+    return {
+      low: number >>> 0,
+      high: Math.floor(number / UINT32_BASE) >>> 0
+    };
+  }
+
+  function uint64FromSignedNumber(value) {
+    var number = Math.trunc(Number(value));
+    if (!Number.isFinite(number) || Math.abs(number) > MAX_SAFE_INTEGER) {
+      throw new Error("invalid signed int64 value: " + value);
+    }
+    if (number >= 0) {
+      return uint64FromUnsignedNumber(number);
     }
 
-    var out = [];
-    while (v >= 0x80n) {
-      out.push(Number((v & 0x7fn) | 0x80n));
-      v >>= 7n;
+    var magnitude = uint64FromUnsignedNumber(-number);
+    var low = (~magnitude.low + 1) >>> 0;
+    var carry = low === 0 ? 1 : 0;
+    return {
+      low: low,
+      high: (~magnitude.high + carry) >>> 0
+    };
+  }
+
+  function uint64ToSafeNumber(words) {
+    var value = (words.high >>> 0) * UINT32_BASE + (words.low >>> 0);
+    if (value > MAX_SAFE_INTEGER) {
+      throw new Error("uint64 exceeds safe integer range");
     }
-    out.push(Number(v));
+    return value;
+  }
+
+  function uint64ToSignedNumber(words) {
+    var low = words.low >>> 0;
+    var high = words.high >>> 0;
+    if ((high & 0x80000000) === 0) {
+      return uint64ToSafeNumber({ low: low, high: high });
+    }
+
+    var magnitudeLow = (~low + 1) >>> 0;
+    var carry = magnitudeLow === 0 ? 1 : 0;
+    var magnitudeHigh = (~high + carry) >>> 0;
+    var magnitude = magnitudeHigh * UINT32_BASE + magnitudeLow;
+    if (magnitude > MAX_SAFE_INTEGER) {
+      throw new Error("int64 exceeds safe integer range");
+    }
+    return -magnitude;
+  }
+
+  function encodeVarintWords(words) {
+    var low = words.low >>> 0;
+    var high = words.high >>> 0;
+    var out = [];
+
+    while (high !== 0 || low >= 0x80) {
+      out.push((low & 0x7f) | 0x80);
+      low = ((low >>> 7) | (high << 25)) >>> 0;
+      high = high >>> 7;
+    }
+    out.push(low & 0x7f);
     return bytesFromArray(out);
   }
 
+  function encodeVarintUnsigned(value) {
+    return encodeVarintWords(uint64FromUnsignedNumber(value));
+  }
+
   function encodeVarintSignedInt64(value) {
-    var v = typeof value === "bigint" ? value : BigInt(Math.trunc(value));
-    if (v < 0n) {
-      v = BigInt.asUintN(64, v);
-    }
-    return encodeVarintUnsigned(v);
+    return encodeVarintWords(uint64FromSignedNumber(value));
   }
 
   function decodeVarint(bytes, offset) {
-    var result = 0n;
-    var shift = 0n;
+    var low = 0;
+    var high = 0;
+    var shift = 0;
     var current = offset;
+    var count = 0;
 
-    while (current < bytes.length) {
+    while (current < bytes.length && count < 10) {
       var b = bytes[current];
+      var payload = b & 0x7f;
       current += 1;
-      result |= BigInt(b & 0x7f) << shift;
+      count += 1;
+
+      if (shift < 32) {
+        low = (low | ((payload << shift) >>> 0)) >>> 0;
+        if (shift > 25) {
+          high = (high | (payload >>> (32 - shift))) >>> 0;
+        }
+      } else {
+        if (shift === 63 && payload > 1) {
+          throw new Error("varint exceeds uint64 range");
+        }
+        high = (high | ((payload << (shift - 32)) >>> 0)) >>> 0;
+      }
+
       if ((b & 0x80) === 0) {
-        return { value: result, offset: current };
+        return { low: low, high: high, offset: current };
       }
-      shift += 7n;
-      if (shift > 70n) {
-        throw new Error("varint too long");
-      }
+      shift += 7;
     }
 
+    if (count >= 10) {
+      throw new Error("varint too long");
+    }
     throw new Error("unterminated varint");
   }
 
   function makeKey(fieldNumber, wireType) {
-    return encodeVarintUnsigned((BigInt(fieldNumber) << 3n) | BigInt(wireType));
+    return encodeVarintUnsigned(fieldNumber * 8 + wireType);
   }
 
   function makeVarintField(fieldNumber, value) {
@@ -301,8 +385,9 @@
       var key = decodeVarint(bytes, offset);
       offset = key.offset;
 
-      var fieldNumber = Number(key.value >> 3n);
-      var wireType = Number(key.value & 0x7n);
+      var keyValue = uint64ToSafeNumber(key);
+      var fieldNumber = Math.floor(keyValue / 8);
+      var wireType = keyValue & 0x7;
       if (fieldNumber === 0) {
         throw new Error("protobuf field number 0");
       }
@@ -315,7 +400,7 @@
         valueEnd = offset + 8;
       } else if (wireType === 2) {
         var lengthInfo = decodeVarint(bytes, offset);
-        var length = Number(lengthInfo.value);
+        var length = uint64ToSafeNumber(lengthInfo);
         valueStart = lengthInfo.offset;
         valueEnd = valueStart + length;
       } else if (wireType === 5) {
@@ -357,7 +442,7 @@
     if (!field || field.wireType !== 0) {
       return null;
     }
-    return BigInt.asIntN(64, decodeVarint(field.valueBytes, 0).value);
+    return uint64ToSignedNumber(decodeVarint(field.valueBytes, 0));
   }
 
   function locationSummary(locationPayload) {
@@ -368,7 +453,7 @@
       if (lat == null || lon == null) {
         return "<missing>";
       }
-      return (Number(lat) / 100000000).toFixed(8) + "," + (Number(lon) / 100000000).toFixed(8);
+      return (lat / 100000000).toFixed(8) + "," + (lon / 100000000).toFixed(8);
     } catch (err) {
       return "<parse-failed:" + err.message + ">";
     }
@@ -752,7 +837,7 @@
   // 适用场景：iOS 26/27 beta5/beta6 及以后，Apple 若改动 /clls/wloc 响应的封装格式，
   // 已知格式（ARPC / synthetic / marker / bare）都解析不了，脚本会直接 failOpen 放行 = 定位不生效。
   // 此时直接在响应缓冲区里逐字节找“可改写的 WLOC protobuf”（wifi 设备 field 2 / 基站 field 22/24），
-  // 找到就把坐标改掉，并用标准 synthetic 封包返回。
+  // 找到就把坐标改掉，并用标准 synthetic 封包返回。与 wloc 的 dist 脚本行为一致。
   function scanPatchAppleWLoc(responseBytes, config) {
     if (!responseBytes || responseBytes.length < 8) {
       throw new Error("body too short for raw scan: " + (responseBytes ? responseBytes.length : 0));
