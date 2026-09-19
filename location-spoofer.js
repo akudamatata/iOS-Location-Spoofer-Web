@@ -825,11 +825,8 @@
       headers["X-Location-Spoofer-Cell"] = String(cellCount);
 
       $done({
-        response: {
-          status: 200,
-          headers: headers,
-          body: bodyBytes
-        }
+        headers: headers,
+        body: bodyBytes
       });
     }
 
