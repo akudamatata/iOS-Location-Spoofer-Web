@@ -880,6 +880,51 @@
     }
   }
 
+  function runQuantumultX(configUrl) {
+    var rawBody = ByteUtils.toUint8Array($response.bodyBytes);
+    if (!rawBody || rawBody.length < 2) {
+      $done({});
+      return;
+    }
+
+    var finished = false;
+    var deadline = setTimeout(function () { finish(); }, 5000);
+    function finish(remoteData) {
+      if (finished) return;
+      finished = true;
+      clearTimeout(deadline);
+
+      // Leave the response intact if the self-hosted configuration is unavailable.
+      if (!remoteData || !Number.isFinite(remoteData.latitude) ||
+          !Number.isFinite(remoteData.longitude) ||
+          Math.abs(remoteData.latitude) > 90 || Math.abs(remoteData.longitude) > 180) {
+        $done({});
+        return;
+      }
+
+      var bytes;
+      try {
+        bytes = spoofAppleResponse(rawBody, remoteData).response;
+      } catch (err) {
+        $done({});
+        return;
+      }
+      $done({ bodyBytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+    }
+
+    $task.fetch({ url: configUrl }).then(function (response) {
+      var remoteData;
+      if (response.statusCode === 200) {
+        try {
+          remoteData = JSON.parse(response.body);
+        } catch (err) {
+          // Invalid JSON is handled by finish as an unavailable configuration.
+        }
+      }
+      finish(remoteData);
+    }, function () { finish(); });
+  }
+
   /* ─────────────────────────────────────────────────────────────
      9. 模块导出与入口 (Module Export & Entry Point)
   ───────────────────────────────────────────────────────────── */
@@ -916,6 +961,10 @@
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
+  } else if (typeof $locationSpooferConfigUrl === "string" &&
+             typeof $task !== "undefined" && typeof $task.fetch === "function" &&
+             typeof $response !== "undefined" && $response != null) {
+    runQuantumultX($locationSpooferConfigUrl);
   } else {
     runShadowrocket();
   }

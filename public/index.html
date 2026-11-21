@@ -1005,7 +1005,7 @@ html.dark #search-results::-webkit-scrollbar-thumb {
 <!-- Config panel -->
 <div id="config-panel">
   <div id="config-panel-header">
-    <h2>Shadowrocket 配置</h2>
+    <h2>客户端配置</h2>
     <button id="config-close">
       <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
     </button>
@@ -1027,6 +1027,12 @@ html.dark #search-results::-webkit-scrollbar-thumb {
       <div class="config-desc">如果您已导入了模块，只需将下方为您拼装好的 argument 覆盖原模块参数即可。</div>
       <div class="config-code-box" id="config-arg-text">...</div>
       <button class="config-action-btn" id="btn-config-copy-arg">复制 argument 参数</button>
+    </div>
+    <div class="config-section">
+      <div class="config-title">Quantumult X（圈 X）本地重写</div>
+      <div class="config-desc">将规则粘贴到配置的 [rewrite_local]，并将域名合并到 [mitm] 的 hostname。开启重写和 MITM，确保设备信任圈 X 的证书。</div>
+      <div class="config-code-box" id="config-qx-text">...</div>
+      <button class="config-action-btn" id="btn-config-copy-qx">复制圈 X 配置</button>
     </div>
     <div class="config-section" style="border-bottom:none;">
       <div id="dark-toggle">
@@ -1731,6 +1737,16 @@ function openConfigPanel() {
   
   $id('config-url-text').textContent = moduleUrl;
   $id('config-arg-text').textContent = argText;
+
+  var qxScriptUrl = domain + '/location-spoofer-qx.js' + (tokenVal ? '?token=' + encodeURIComponent(tokenVal) : '');
+  var locationPattern = String.raw`^https?://(?:gs-loc(?:-cn)?\.apple\.com|gsp-ssl\.ls\.apple\.com|bluedot\.is\.autonavi\.com(?:\.gds\.alibabadns\.com)?)/clls/wloc(?:\?.*)?$`;
+  $id('config-qx-text').textContent = [
+    '[rewrite_local]',
+    locationPattern + ' url script-response-body ' + qxScriptUrl,
+    '',
+    '[mitm]',
+    'hostname = gs-loc.apple.com, gs-loc-cn.apple.com, gsp-ssl.ls.apple.com, bluedot.is.autonavi.com, bluedot.is.autonavi.com.gds.alibabadns.com'
+  ].join('\n');
 }
 
 function closeConfigPanel() {
@@ -1761,6 +1777,12 @@ $id('btn-config-copy-url').addEventListener('click', function() {
 $id('btn-config-copy-arg').addEventListener('click', function() {
   navigator.clipboard.writeText($id('config-arg-text').textContent)
     .then(function() { toast('参数已复制'); })
+    .catch(function() { toast('复制失败，请手动选择复制'); });
+});
+
+$id('btn-config-copy-qx').addEventListener('click', function() {
+  navigator.clipboard.writeText($id('config-qx-text').textContent)
+    .then(function() { toast('圈 X 配置已复制'); })
     .catch(function() { toast('复制失败，请手动选择复制'); });
 });
 
